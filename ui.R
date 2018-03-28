@@ -51,7 +51,11 @@ shinyUI(
                                                 h4("Messages") , 
                                                 span(textOutput("fgf.messages") , style="color:red")),
                                               box(width = 12, DT::dataTableOutput("fgf.preview")
-                                              )
+                                              ),br(),
+                                            
+                                                  plotOutput("fgf.beanplot" , height = 700 )
+                                                
+                                           
                                     )
                                     
                                   )

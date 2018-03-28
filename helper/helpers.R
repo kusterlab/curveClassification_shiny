@@ -36,11 +36,12 @@ generateFunctionList <- function(functions = vector() , pattern = vector())
   # initialize a list of functions
   functionList <- list()
   
-  # for every pattern the functions are generated
-  for(npat in pattern){
-    
+ 
     # for every function in functions and for every pattern a list entrie is generated
-    for(nfunc in functions){
+    for(i in 1:length(functions)){
+      
+      npat <- pattern[i]
+      nfunc <- functions[i]
       
       # assigning the function to the list element
       functionList[[paste(nfunc , npat ,sep = "_")]] <- try(eval(parse(text = nfunc)) , silent = T)
@@ -51,7 +52,7 @@ generateFunctionList <- function(functions = vector() , pattern = vector())
       
     }
     
-  }
+ 
   return(functionList)
   
 }
@@ -310,4 +311,66 @@ plotTargetDensity <- function(predictionLFQ , thresholdLFQ , lowConfidenceTarget
   plot
   
 }
+
+
+
+
+beanPlotFeatures <- function(data , target , subsetvariable = NULL , col = c("orange" , "blue") ,quantileCut = F  , interquantile = 10 ,  ...){
+  
+  idx <- vector()
+  
+  for(n in names(data))
+  {
+    idx[n]<- class(data[,n]) == "numeric" || class(data[,n]) == "integer"
+  }
+  
+  features <- names(data)[idx]
+  
+  
+  
+  for(nfeature in features)
+  {
+    
+    if(quantileCut){
+      
+      ylimLower <- -interquantile*(fivenum(data[,nfeature] , na.rm = T)[4]-fivenum(data[,nfeature] , na.rm = T)[2])
+      ylimUpper <- interquantile*(fivenum(data[,nfeature] , na.rm = T)[4]-fivenum(data[,nfeature] , na.rm = T)[2])
+    }else{
+      ylimLower <- NULL
+      ylimUpper <- NULL
+      
+    }
+    
+    
+    tmp <- split(data[,nfeature] , data[,c(target , subsetvariable) ])
+    
+    if(length(tmp) == 2){
+      par(mar=c(5.1,4.1,4.1,2.1))
+      beanplot(tmp , what = c(1,1,1,0) , ylab = nfeature  , bw = "nrd0" , las = 2 , side = "both" ,  col = list(col[1], c(col[2], "white")) , show.names = F , ylim = c(ylimLower , ylimUpper) )
+      legend("topright" , col = col , legend = names(tmp) , pch = 19  , bty = "n")
+      
+      
+      
+    }else if(length(unique(data$target)) == 2){
+      par(mar=c(11.1,4.1,4.1,2.1))
+      
+      beanplot(tmp , what = c(1,1,1,0) , ylab = nfeature  , bw = "nrd0" , las = 2 , side = "both" ,  col = list(col[1], c(col[2], "white")) , ... , ylim = c(ylimLower , ylimUpper) )
+      legend("topright" , col = col , legend = unique(data$target) , pch = 19  , bty = "n")
+      par(mar=c(5.1,4.1,4.1,2.1))
+      
+    }else{
+      
+      beanplot(tmp , what = c(1,1,1,0) , ylab = nfeature  , bw = "nrd0" , las = 2 , ...  , ylim = c(ylimLower , ylimUpper))
+      
+      
+      
+    }
+    
+    
+    
+  }
+  
+  
+}
+
 

@@ -5,6 +5,7 @@ require(BBmisc)
 require(mlr)
 require(GGally)
 require(shinyjs)
+require(beanplot)
 
 #source("V://users_files/Florian Seefried/Master/R_project/Masterthesis/functions/GenerateModel.R")
 
@@ -94,12 +95,10 @@ shinyServer(function(input, output , session) {
       selectInput("fgf.function", "Feature generation function", selected = NULL,
                   
                   choices = grep("^fgf_" , ls(envir = globalenv() ) , value = T) , multiple = T , selectize = T),
-      selectInput("fgf.counts", "Feature generation function counts", selected = NULL,
-                  
-                  choices = grep("^fgf_" , ls(envir = globalenv() ) , value = T) , multiple = T , selectize = T),
-      textInput("fgf.concentrations.Pattern" , "Feature generation concentration patterns" , placeholder = "e.g. Normalized.LFQ.intensity.;Normalized.Intensity."),
       
-      textInput("fgf.counts.Pattern" , "Feature generation count patterns" , placeholder = "e.g. MS.MS.count.;Unique.peptides."),
+      textInput("fgf.function.Pattern" , "Feature generation function patterns" , placeholder = "e.g. Normalized.LFQ.intensity.;Normalized.Intensity."),
+      
+      checkboxInput("fgf.function.paired" , "Function and patterns paired?" , value = F),
       
       actionButton("fgf.start" , label = "Generate features"),
       br(),
@@ -107,10 +106,49 @@ shinyServer(function(input, output , session) {
       "Please make sure to do not change anything in feature generation after you clicked the button 'Use data with new features' or redo the whole process if you like to change anyting.",
       br(),
       br(),
-      actionButton("fgf.replace" , label = "Use data with new features")
+      actionButton("fgf.replace" , label = "Use data with new features") , 
+      br(),
+      
+      wellPanel(
+        h4("Plot options"),
+        selectInput("fgf.TargetColumn" , label = "Select target" , choices = colnames(data$data) , multiple = F , selected = TargetColumn.fgf() , selectize = T),
+        
+        selectInput("fgf.PositiveClass" , label = "Select positive class" , choices = unique(data$data[,input$fgf.TargetColumn]) , multiple = F , selected = PositiveClass.fgf() , selectize = T)
+        
+        
+      )
+      
+      
+      
+      
+      
     )
     
   })
+  
+  
+  TargetColumn.fgf <- reactive({
+    
+    if(is.null(input$fgf.TargetColumn)){
+      return(NULL)
+    }else{
+      return(input$fgf.TargetColumn)
+    }
+    
+    
+  })
+  
+  
+  PositiveClass.fgf <- reactive({
+    if(is.null(input$fgf.PositiveClass)){
+      return(NULL)
+    }else{
+      return(input$fgf.PositiveClass)
+    }
+    
+  })
+  
+  
   
   observe({ 
     
@@ -133,34 +171,42 @@ shinyServer(function(input, output , session) {
     
     output$fgf.messages <- renderText(isolate({
       
-      patternCounts <- strsplit(input$fgf.counts.Pattern , ";")[[1]] 
+      patternFun <- strsplit(input$fgf.function.Pattern , ";")[[1]]
       
-      patternConcen <- strsplit(input$fgf.concentrations.Pattern , ";")[[1]]
-      
-      fgf.List <<- NULL
-      
-      data$newFeatures <<- NULL
-      
-      if(!is.null(input$fgf.concentrations)){
+      if(input$fgf.function.paired){
         
-        validate(need({length(grep(paste0(patternConcen , collapse = "|") , names(data$data))) > 0}, message = "The specified pattern for concentration dependet features does not occur in the dataset"))
+        validate(need(length(input$fgf.function) == length(patternFun) , message = "If 'functions and patterns paired?' is selected the length of functions needs to be the same as the length of patterns"))
         
         
-        fgf.List <<- generateFunctionList(input$fgf.concentrations , patternConcen)
+        
+      }else{
+        
+        validate(need(length(patternFun) == 1, message = "If 'functions and patterns paired?' is deselected the length of patterns has to be one") )
+        
+        
+        patternFun <- rep(input$fgf.function.Pattern , times = length(input$fgf.function))
         
       }
       
-      if(!is.null(input$fgf.counts)){
+      
+      if(!is.null(input$fgf.function) && is.null(fgf.List)){
         
-        validate(need({length(grep(paste0(patternCounts , collapse = "|") , names(data$data))) > 0}, message = "The specified pattern for count dependet features does not occur in the dataset"))
+        validate(need({length(grep(paste0(patternFun , collapse = "|") , names(data$data))) > 0}, message = "The specified pattern does not occur in the dataset!"))
         
+        fgf.List <<- generateFunctionList(input$fgf.function , patternFun)
         
-        fgf.List <<- c(generateFunctionList(input$fgf.concentrations , patternCounts))
+      }else if(!is.null(input$fgf.function)){
         
+        validate(need({length(grep(paste0(patternFun , collapse = "|") , names(data$data))) > 0}, message = "The specified pattern does not occur in the dataset!"))
+        
+        tmp <- generateFunctionList(input$fgf.function , patternFun)
+        
+        fgf.List <<- c(fgf.List , tmp)
       }
       
-      validate(need(!is.null(fgf.List), message = "No feature generation functions selected"),
-               need(!is.null(data$data) , message = "No data set selected"))
+      
+      validate(need(!is.null(fgf.List), message = "No feature generation functions selected."),
+               need(!is.null(data$data) , message = "No data set selected."))
       
       
       d <- try(evaluateFunList(fgf.List , data$data) , silent = T)
@@ -184,6 +230,9 @@ shinyServer(function(input, output , session) {
   })
   
   
+  
+  
+  
   output$fgf.preview <- DT::renderDataTable({
     
     
@@ -191,12 +240,34 @@ shinyServer(function(input, output , session) {
       #To ensure that the data is already not NULL
       reqAndAssign(data$newFeatures , "d")
       #providing columnNames
+      d <- summarizeColumns(d)
       colnames(d) <- make.names(colnames(d))
       #nessesary to return the dataframe
       d
     }
   }, options = list(scrollX = TRUE),
-  caption = "You generated the following new dataset")
+  caption = "You generated the following new dataset" , selection = 'single')
+  
+  output$fgf.beanplot <- renderPlot({
+    
+    validate(need(!is.null(PositiveClass.fgf()) , message = "In order to visualize the features a positive class needs to be selected") , 
+             need(!is.null(TargetColumn.fgf()) , message = "In order to visualize the features a target variable needs to be selected"))#,
+    #need())
+    
+    selectedRows <- input$fgf.preview_rows_selected
+    
+    
+    d <- data$newFeatures
+    
+    d[ , TargetColumn.fgf() ] <- ifelse(d[ , TargetColumn.fgf() ] == PositiveClass.fgf() , "positive" , "negative" )
+    
+    
+    
+    beanPlotFeatures(data = d[, c( TargetColumn.fgf() , colnames( data$newFeatures )[ selectedRows ] )] , target = TargetColumn.fgf())
+    
+    
+    
+  })
   
   
   
@@ -254,8 +325,8 @@ shinyServer(function(input, output , session) {
     }else{
       
       return(sum(data$data[,input$newModel.TargetColumn] == input$newModel.PositiveClass)/dim(data$data)[1])
-    
-      }
+      
+    }
     
   })
   
@@ -264,15 +335,15 @@ shinyServer(function(input, output , session) {
     
     sidebarMenu(
       
-      selectInput("newModel.features" , label = "Select features" , choices = colnames(data$data) , multiple = T , selected = isolate(features()) , selectize = T) , 
+      selectInput("newModel.features" , label = "Exclude features" , choices = colnames(data$data) , multiple = T , selected = isolate(features()) , selectize = T) , 
       
       selectInput("newModel.TargetColumn" , label = "Select target" , choices = colnames(data$data) , multiple = F , selected = TargetColumn() , selectize = T),
       
       selectInput("newModel.PositiveClass" , label = "Select positive class" , choices = unique(data$data[,input$newModel.TargetColumn]) , multiple = F , selected = PositiveClass() , selectize = T),
       
-      numericInput("newModel.splitData" , label = "Ratio to split data into train and test" , min = 0 , max = 1 , step = 0.05 , value = 0.8),
+      numericInput("newModel.splitData" , label = "Ratio to split data into train and test" , min = 0.05 , max = 1 , step = 0.05 , value = 0.8),
       
-      numericInput("newModel.usRate" , label = "Select a undersampling rate" , value = usRate() , min = 10^-4 , max = 1 , step = 10^-4) , 
+      numericInput("newModel.usRate" , label = "Select a undersampling rate" , value = round(usRate() , digits = 4) , min = 10^-4 , max = 1 , step = 10^-4) , 
       
       checkboxInput("newModel.tuneThreshold" , label = "Tune threshold?" , value = tuneThreshold()),
       
@@ -307,60 +378,66 @@ shinyServer(function(input, output , session) {
   observeEvent(input$newModel.train , {
     
     output$newModelMessages <- renderText({
-     
-       txt <- NULL
       
-        if(is.null(features()) || any(features() %in% TargetColumn()) ){
-          
-          txt <- "You need to select features and the target variable could not be a feature.\n"
-        }
+      
+      isolate({
+        
+        txt <- NULL
         
         if(is.null(usRate()) || usRate() == 0){
           
           txt <- c(txt , "The selected positive class does not contain a single observations.\n")
           
         }
-       
-       if(is.null(data$data)){
-         
-         
-         txt <- c(txt , "Please select a dataset.\n")
-         
-         
-       }
-      
-      if(length(txt)>0){
         
-        return(txt)
-      }
+        if(is.null(data$data)){
+          
+          
+          txt <- c(txt , "Please select a dataset.\n")
+          
+          
+        }
         
-        if(!is.null(features()) && !any(features() %in% TargetColumn()) && usRate() != 0){
+        if(dim(data$data)[2] < 2 ){
+          
+          txt <- c(txt ,"The uploaded data needs to contain at least two columns")
+        }
+        
+        
+        if(length(txt)>0){
+          
+          return(txt)
+        }
+        
+        if(usRate() != 0){
           
           isolate({
-          n <- sample(1:dim(data$data)[1] , 0.8*dim(data$data)[1])
-          
-          d <- data$data
-          
-          d[,TargetColumn()] <- ifelse(d[,TargetColumn()] == PositiveClass() , TRUE , FALSE)
-          
-          
-          data$train <- d[ n , ]
-          
-          data$test <- d[ setdiff( 1:dim(data$data)[1] , n) , ]
-          
-          data$model <- generateModel(classifier = "classif.randomForest" , us.rate = usRate() , features = features() , data = data$train , targetVariable = TargetColumn() ,positiveClass = "TRUE" , estimatingThreshold = tuneThreshold() , tprThreshold = input$newModel.tprTuneValue )
-          
-          
-          data$model <- combineModel(trainOutput = data$model , featureFunctionList = fgf.List , test.data = data$test , positveClass = PositiveClass())
-          
-          
-          return("Model trained successfull!")
+            n <- sample(1:dim(data$data)[1] , input$newModel.splitData*dim(data$data)[1])
+            
+            d <- data$data
+            
+            d[,TargetColumn()] <- ifelse(d[,TargetColumn()] == PositiveClass() , TRUE , FALSE)
+            
+            
+            data$train <- d[ n , ]
+            
+            data$test <- d[ setdiff( 1:dim(data$data)[1] , n) , ]
+            
+            usedFeatures <- grep(paste0(paste0("^" , c(features() , TargetColumn()), "$") , collapse = "|") , names(d) , invert = T , value = T)
+            
+            data$model <- generateModel(classifier = "classif.randomForest" , us.rate = usRate() , features = usedFeatures , data = data$train , targetVariable = TargetColumn() ,positiveClass = "TRUE" , estimatingThreshold = tuneThreshold() , tprThreshold = input$newModel.tprTuneValue )
+            
+            
+            data$model <- combineModel(trainOutput = data$model , featureFunctionList = fgf.List , test.data = data$test , positveClass = PositiveClass())
+            
+            
+            return("Model trained successfull!")
           })
           
           
         }
         
-      
+      })
       
     })
     
@@ -389,16 +466,16 @@ shinyServer(function(input, output , session) {
       return(plotThreshVsPerf(generateThreshVsPerfData(pred , measures = list(tpr , fpr , ppv , acc)) , pretty.names = T))
       
       
-      })
+    })
     
     
     output$probabilityDistribution <- renderPlot({
-     
-        
-        return( plotTargetDensity(pred , thresholdLFQ = pred$threshold["TRUE"]) )
-        
-        
-     
+      
+      
+      return( plotTargetDensity(pred , thresholdLFQ = pred$threshold["TRUE"]) )
+      
+      
+      
     })
     
     
@@ -427,11 +504,11 @@ shinyServer(function(input, output , session) {
       
       actionButton("optimize.retrain" , label = "optimize") 
       
-    
-
+      
+      
       
     )
-
+    
     
     
   })
@@ -468,7 +545,7 @@ shinyServer(function(input, output , session) {
     
   })
   
-
+  
   tuneThresholdOptimize <- reactive({
     
     if(is.null(input$optimize.tuneThreshold)){
@@ -497,27 +574,27 @@ shinyServer(function(input, output , session) {
       
       
       
+      
+      isolate({
         
-        isolate({
-          
-          d <- data$evaluated
-          
-          
-          d[,data$model$model$task.desc$target] <- ifelse(d[,data$model$model$task.desc$target] == data$model$positiveClass , TRUE , FALSE)
-          
-          data$modelretrained <- retrain(combinedModel = data$model , newdata = d , estimatingThreshold = tuneThresholdOptimize() , tprThreshold = input$optimize.tprTuneValue)
-          
-
-          
-
-          
-          return("Model retrained successfull")
-        })
-
+        d <- data$evaluated
+        
+        
+        d[,data$model$model$task.desc$target] <- ifelse(d[,data$model$model$task.desc$target] == data$model$positiveClass , TRUE , FALSE)
+        
+        data$modelretrained <- retrain(combinedModel = data$model , newdata = d , estimatingThreshold = tuneThresholdOptimize() , tprThreshold = input$optimize.tprTuneValue)
+        
+        
+        
+        
+        
+        return("Model retrained successfull")
+      })
+      
       
     })
     
-
+    
     
   })
   
@@ -578,7 +655,7 @@ shinyServer(function(input, output , session) {
     output$probabilityDistribution.new <- renderPlot({
       
       
-        return( plotTargetDensity(predNewMod , thresholdLFQ = predNewMod$threshold["TRUE"]) )
+      return( plotTargetDensity(predNewMod , thresholdLFQ = predNewMod$threshold["TRUE"]) )
       
       
       
@@ -590,17 +667,17 @@ shinyServer(function(input, output , session) {
   
   
   
-   output$optimizeNewdata <-  DT::renderDataTable(data$evaluated, caption = "New annotated data")
-      
-    
-    
+  output$optimizeNewdata <-  DT::renderDataTable(data$evaluated, caption = "New annotated data")
+  
+  
+  
   output$optimizeExchangeButton <- renderUI({
     
     if(!is.null(data$modelretrained)){
       sidebarMenu(
-      actionButton("optimizeExchangeButton" , label = "Use new model"),
-      
-      downloadButton("optimizeSaveModel" , label = "Download model")
+        actionButton("optimizeExchangeButton" , label = "Use new model"),
+        
+        downloadButton("optimizeSaveModel" , label = "Download model")
       )
     }else{
       NULL
@@ -626,12 +703,12 @@ shinyServer(function(input, output , session) {
     saveRDS(data$modelretrained , file = file)
     
   })
-    
-    
-    
-    
-    
- 
+  
+  
+  
+  
+  
+  
   
   
   #### predict #####
@@ -651,12 +728,12 @@ shinyServer(function(input, output , session) {
       
       if(!is.null(data$newdata) && !is.null(data$model) ){
         list(
-        actionButton("predict.go" , "predict"),
-        downloadButton("predict.Download" , label = "Download .csv")
+          actionButton("predict.go" , "predict"),
+          downloadButton("predict.Download" , label = "Download .csv")
         )
       }
       
-      )
+    )
     
   })
   
@@ -695,29 +772,29 @@ shinyServer(function(input, output , session) {
     
     
     data$pred <- try(predict(data$model , newdata = data$newdata))
- 
+    
     
   })
   
   observeEvent(data$pred , {
     
     output$predictionData <- DT::renderDataTable({
-    
-    validate(need(class(data$pred) != "try-error" , "No prediction possible, please check if the features are similar to the training data"))
+      
+      validate(need(class(data$pred) != "try-error" , "No prediction possible, please check if the features are similar to the training data"))
       isolate({
-      
-      d <- data$pred$data[,c("prob.TRUE" , "response")]
-      
-      
-      colnames(d) <- c("probability" , data$pred$task.desc$target )
-      
-      d <- cbind(data$newdata , d)
-      
-      d[,ncol(d)] <- ifelse(d[,ncol(d)] == "TRUE" , data$model$positiveClass , "")
-      
-      data.prediction.download <<- d
-      
-      return(d)
+        
+        d <- data$pred$data[,c("prob.TRUE" , "response")]
+        
+        
+        colnames(d) <- c("probability" , data$pred$task.desc$target )
+        
+        d <- cbind(data$newdata , d)
+        
+        d[,ncol(d)] <- ifelse(d[,ncol(d)] == "TRUE" , data$model$positiveClass , "")
+        
+        data.prediction.download <<- d
+        
+        return(d)
       })
       
     })
