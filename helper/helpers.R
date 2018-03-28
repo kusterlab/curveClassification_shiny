@@ -242,7 +242,7 @@ predict.WrappedCombiModel <- function(combinedModel , newdata , NAtoZero = T){
 }
 
 
-retrain <- function(combinedModel , newdata, estimatingThreshold = F , tprThreshold = 0.995){
+retrain <- function(combinedModel , newdata, estimatingThreshold = F , tprThreshold = 0.995 , keepData = F){
   
   if(! all( combinedModel$model$features %in% colnames(newdata) ) && !is.null(combinedModel[["funList"]])){
     
@@ -263,12 +263,25 @@ retrain <- function(combinedModel , newdata, estimatingThreshold = F , tprThresh
   newdataWithfeatures <- convertClass(newdataWithfeatures)
   
   ntrain <- sample(1:nrow(newdataWithfeatures) , 0.8*nrow(newdataWithfeatures))
+  
+  #for test data the features are not subseted
   ntest <- setdiff(1:nrow(newdata) , ntrain)
+  
+  if(keepData){
   
   combinedModel$test.data <- rbind(combinedModel$test.data , newdata[ntest , names(combinedModel$test.data) ])
   
   combinedModel$modelpars$train.data <- rbind(combinedModel$modelpars$train.data , newdataWithfeatures[ntrain , c(combinedModel$model$features , combinedModel$model$task.desc$target) ])
   
+  }else{
+    
+    combinedModel$test.data <-  newdata[ntest , names(combinedModel$test.data) ]
+    
+    combinedModel$modelpars$train.data <-  newdataWithfeatures[ntrain , c(combinedModel$model$features , combinedModel$model$task.desc$target) ]
+    
+    
+    
+  }
   
   task <- makeClassifTask(id = combinedModel$model$task.desc$id , data =  combinedModel$modelpars$train.data , target = combinedModel$model$task.desc$target , positive = combinedModel$model$task.desc$positive)
   

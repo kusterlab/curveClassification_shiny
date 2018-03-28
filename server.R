@@ -502,6 +502,8 @@ shinyServer(function(input, output , session) {
         numericInput("optimize.tprTuneValue" , label = "Tpr tune value" , min = 0 , max = 1 ,value = 0.995 ,  step = 10^-3)
       },
       
+      checkboxInput("optimize.keepData" , label = "Keep old training and test data" , value = F),
+      
       actionButton("optimize.retrain" , label = "optimize") 
       
       
@@ -582,7 +584,7 @@ shinyServer(function(input, output , session) {
         
         d[,data$model$model$task.desc$target] <- ifelse(d[,data$model$model$task.desc$target] == data$model$positiveClass , TRUE , FALSE)
         
-        data$modelretrained <- retrain(combinedModel = data$model , newdata = d , estimatingThreshold = tuneThresholdOptimize() , tprThreshold = input$optimize.tprTuneValue)
+        data$modelretrained <- retrain(combinedModel = data$model , newdata = d , estimatingThreshold = tuneThresholdOptimize() , tprThreshold = input$optimize.tprTuneValue , keepData = input$optimize.keepData)
         
         
         
