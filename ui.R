@@ -52,10 +52,10 @@ shinyUI(
                                                 span(textOutput("fgf.messages") , style="color:red")),
                                               box(width = 12, DT::dataTableOutput("fgf.preview")
                                               ),br(),
-                                            
-                                                  plotOutput("fgf.beanplot" , height = 700 )
-                                                
-                                           
+                                              
+                                              plotOutput("fgf.beanplot" , height = 700 )
+                                              
+                                              
                                     )
                                     
                                   )
@@ -169,14 +169,28 @@ shinyUI(
                                 
                                 
                        )   , 
+                       tabPanel("Validate Model"),
                        tabPanel("Predict" , 
                                 
                                 sidebarPanel(width = 3,
                                              uiOutput("predict.ui")
                                 ),
                                 mainPanel(width = 9 ,
+                                          tabsetPanel(
+                                            tabPanel("prediction" , 
+                                                     
+                                                     DT::dataTableOutput("predictionData"),
+                                                     uiOutput("plotsPrediction")
+                                                     
+                                                     
+                                            ) , 
+                                            tabPanel("Nearest Neighbors"
+                                                     
+                                                     
+                                                     
+                                                     
+                                            ))
                                           
-                                          DT::dataTableOutput("predictionData")      
                                           
                                 )
                        ),
@@ -201,7 +215,16 @@ shinyUI(
                                            
                                            
                                   ),
-                                  tabPanel("Others")
+                                  tabPanel("Others" , 
+                                           tabsetPanel(
+                                             tabPanel("Upload plot function"  , 
+                                                      
+                                                      sidebarPanel( width = 3 , 
+                                                                    fileInput("plotScript" , label = "Select a plot script")
+                                                      ),
+                                                      mainPanel(width = 9 , tableOutput("plotEnv_list"))
+                                             )
+                                           ))
                        )
                        
                        

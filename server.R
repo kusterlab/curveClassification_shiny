@@ -28,6 +28,8 @@ shinyServer(function(input, output , session) {
   
   fgf.List <- NULL
   
+  plotfun_Env <- new.env()
+  
   data.prediction.download <- NULL
   
   output$import.ui <- renderUI({
@@ -728,8 +730,10 @@ shinyServer(function(input, output , session) {
       
       selectInput("predict.sep", "Separator", selected = ",", choices = c(Comma = ",", Semicolon = ";", Tab = "\t")),
       
+      
       if(!is.null(data$newdata) && !is.null(data$model) ){
         list(
+          #numericInput("predict.Threshold" , label = "set Threshold" , min = 0 , max = 1 , step = 10^-2 , value =  round(data$model$threshold , digits = 2) ),
           actionButton("predict.go" , "predict"),
           downloadButton("predict.Download" , label = "Download .csv")
         )
@@ -738,6 +742,8 @@ shinyServer(function(input, output , session) {
     )
     
   })
+  
+  
   
   
   observe({ 
@@ -776,6 +782,12 @@ shinyServer(function(input, output , session) {
     data$pred <- try(predict(data$model , newdata = data$newdata))
     
     
+    if(class(data$pred)[1] != "try-error"){
+      
+      #data$pred <- setThreshold(data$pred , ifelse(is.null(input$predict.Threshold) , 0.5 , input$predict.Threshold))
+      
+    }
+    
   })
   
   observeEvent(data$pred , {
@@ -804,6 +816,41 @@ shinyServer(function(input, output , session) {
     
   })
   
+
+  
+  observeEvent(input$predictionData_rows_selected,{
+    
+    d <- data.prediction.download[input$predictionData_rows_selected , ]
+    
+
+    
+    plotfun <<- plotfun_Env[[ (grep("^plot_" , ls(envir = plotfun_Env) , value = T))]]
+    
+
+    
+    output$plotsPrediction <- renderUI({
+      
+      
+        
+        lapply(1:nrow(d) ,  function (x, plotfun , data) {
+          
+          
+            output[[paste0("plot1",x)]] <- renderPlot({
+             
+              temp <-  plotfun(data[x , ])
+              
+              
+
+            } )
+            
+            plotOutput(paste0("plot1",x))
+          
+        } , plotfun = plotfun , data = d)
+        
+    })
+    
+  })
+ 
   
   output$predict.Download <- downloadHandler(filename = function() {paste0(input$predict.csv$name , "predicted.csv")} , content = function(file){write.csv(data.prediction.download , file)})
   
@@ -956,6 +1003,28 @@ shinyServer(function(input, output , session) {
     
   })
   
+  
+  
+  ### others plotfun ###
+  
+  observe({
+    
+    f <- input$plotScript$datapath
+    
+    if(!is.null(f)){
+    
+    source(f , local = plotfun_Env)
+      
+     
+    }
+    
+    output$plotEnv_list<-  renderTable({
+      
+      validate(need(length(plotfun_Env)>0 , message = "No Elements in the Enviroment"),
+               need(length(grep("^plot_" , ls(envir = plotfun_Env))) == 1  , "One function with the name plot_ have to be provided"))
+      
+      ls(envir = plotfun_Env)} , colnames = F)
+  })
   
   
   
