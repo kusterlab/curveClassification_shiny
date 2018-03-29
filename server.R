@@ -105,10 +105,7 @@ shinyServer(function(input, output , session) {
       checkboxInput("fgf.function.paired" , "Function and patterns paired?" , value = F),
       
       actionButton("fgf.start" , label = "Generate features"),
-      br(),
-      br(),
-      "Please make sure to do not change anything in feature generation after you clicked the button 'Use data with new features' or redo the whole process if you like to change anyting.",
-      br(),
+     
       br(),
       actionButton("fgf.replace" , label = "Use data with new features") , 
       br(),
@@ -328,7 +325,7 @@ shinyServer(function(input, output , session) {
       
     }else{
       
-      return(sum(data$data[,input$newModel.TargetColumn] == input$newModel.PositiveClass)/dim(data$data)[1])
+      return(round(sum(data$data[,input$newModel.TargetColumn] == input$newModel.PositiveClass)/dim(data$data)[1] , digits = 4))
       
     }
     
@@ -347,7 +344,7 @@ shinyServer(function(input, output , session) {
       
       numericInput("newModel.splitData" , label = "Ratio to split data into train and test" , min = 0.05 , max = 1 , step = 0.05 , value = 0.8),
       
-      numericInput("newModel.usRate" , label = "Select a undersampling rate" , value = round(usRate() , digits = 4) , min = 10^-4 , max = 1 , step = 10^-4) , 
+      numericInput("newModel.usRate" , label = "Select a undersampling rate" , value =usRate() , min = 10^-4 , max = 1 , step = 10^-4) , 
       
       checkboxInput("newModel.tuneThreshold" , label = "Tune threshold?" , value = tuneThreshold()),
       
@@ -537,13 +534,18 @@ shinyServer(function(input, output , session) {
     
   })
   
-  observe({
+  observeEvent(input$optimize.model$datapath , {
     
     f = input$optimize.model$datapath
     
     if (!is.null(f)) {
       
-      data$model <- readRDS(f)
+      data$model <- try(readRDS(f))
+      
+    }
+    
+    if(class(data$model) == "try-error"){
+      data$model <- NULL
       
     }
     
@@ -569,7 +571,7 @@ shinyServer(function(input, output , session) {
     
     output$optimizeMessages <- renderText({
       
-      
+      isolate({
       
       if(is.null(data$evaluated) || is.null(data$model) ){
         
@@ -581,7 +583,7 @@ shinyServer(function(input, output , session) {
       
       
       
-      isolate({
+      
         
         d <- data$evaluated
         
@@ -731,7 +733,7 @@ shinyServer(function(input, output , session) {
     
   })
   
-
+observeEvent(input$validate.go , {
   
   
   output$plotsFN <- renderUI({
@@ -740,10 +742,12 @@ shinyServer(function(input, output , session) {
       
       tmpModel <- data$modelretrained
       
-    }else{
+    }else if(!is.null(input$validate.modelSelection)){
       
       tmpModel <- data$model
       
+    }else{
+      tmpModel <- NULL
     }
     
     validate(need(!is.null(tmpModel) , "The selected model is not available"),
@@ -788,17 +792,22 @@ shinyServer(function(input, output , session) {
     
   })
   
-  
+})
+
+observeEvent(input$validate.go , {
+
   output$plotsFP <- renderUI({
     
-    if(input$validate.modelSelection == "optimized model"){
+    if(!is.null(input$validate.modelSelection) && input$validate.modelSelection == "optimized model"){
       
       tmpModel <- data$modelretrained
       
-    }else{
+    }else if(!is.null(input$validate.modelSelection)){
       
       tmpModel <- data$model
       
+    }else{
+      tmpModel <- NULL
     }
     
     validate(need(!is.null(tmpModel) , "The selected model is not available"),
@@ -841,7 +850,7 @@ shinyServer(function(input, output , session) {
     } , plotfun = plotfun , data = d)
     
   })
-  
+})
   
   #### predict #####
   
@@ -889,17 +898,20 @@ shinyServer(function(input, output , session) {
     
   })
   
-  observe({
+  observeEvent(input$predict.model$datapath , {
     
     f = input$predict.model$datapath
     
     if (!is.null(f)) {
       
-      data$model <- readRDS(f)
+      data$model <- try(readRDS(f))
       
       
     }
-    
+    if(class(data$model) == "try-error"){
+      data$model <- NULL
+      
+    }
     
   })
   
