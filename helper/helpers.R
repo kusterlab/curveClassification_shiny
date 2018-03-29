@@ -175,7 +175,7 @@ combineModel <- function(trainOutput , featureFunctionList , test.data = NULL , 
   }
   
   
-  combinedModel[["modelpars"]] <- trainOutput[c("train.data " , "learner")]
+  combinedModel[["modelpars"]] <- trainOutput[c("train.data" , "learner")]
   
   combinedModel[["test.data"]] <- test.data
   
@@ -386,4 +386,88 @@ beanPlotFeatures <- function(data , target , subsetvariable = NULL , col = c("or
   
 }
 
+require(BBmisc)
+require(RANN)
+#it was added all with prob.TRUE on 27.2
 
+nearestNeighbors <- function(uniqueIdentifier , searchspace , newData , nNeighbor = 1000  , targetColumn = "Target" )
+{
+  # searchspace contains only columns of intrest
+  
+  # newdata needs to contain all columns which are also present in the searchspace
+  
+  newData <- newData[ , grep(paste0(paste0("^" , colnames(searchspace) , "$") , collapse = "|") , names(newData))]
+  
+  if(dim(newData)[2] != dim(searchspace)[2]){
+    
+    stop("Search space and new data do not contain the same column.")
+  }
+  
+  newData <- newData[,colnames(searchspace)]
+  
+  lengthSearchspace <- dim(searchspace)[1]
+  
+  searchspace <- rbind(searchspace , newData)
+  
+  targets <- searchspace$Targets
+  
+  searchdf <- normalize(x = searchspace[,grep(targetColumn , names(searchspace) , invert = T)] , method = "standardize" )
+  
+  
+  searchspace <- cbind(searchspace , Targets = targets)
+  
+  
+  nearestNeighbor <- nn2(data = searchdf[,grep(targetColumn , names(searchdf) , invert = T)] , query = searchdf[-c(1:lengthSearchspace) , grep(targetColumn , names(searchdf) , invert = T)] , k = nNeighbor)
+  
+  neighborsdata <- apply(nearestNeighbor[["nn.idx"]] , 1 , function(x , searchspace){
+    
+    tmpData <- searchspace[x,]
+    
+    # minus one nessesary due to the fact that the first nearest neighbor is the observation itself and should not occur
+    # later on the one is added to the index again
+    indexObserved <- tmpData[-1 , "Targets"] == TRUE
+    
+    obsTrue <- min(which(indexObserved == TRUE))
+    
+    obsFalse <- min(which(indexObserved == FALSE) , na.rm = T)
+    
+    title <- c("nearest neighbor: TRUE" , "Selected observation" , "nearest neighbor: FALSE")
+    
+    return(cbind(tmpData[c(obsTrue+1 ,1 , obsFalse+1), ] , title = title))
+    
+    
+    
+  } , searchspace = searchspace)
+  
+  
+  return(neighborsdata)
+  
+  
+}
+
+
+
+predictionNames <- function(prediction , class = c("TP" , "TN" , "FP" , "FN")){
+  
+  
+  if(class == "TP"){
+    
+    name <- rownames(prediction$data)[prediction$data$truth == TRUE & prediction$data$response == TRUE] 
+    
+  }else if(class == "TN"){
+    
+    name <- rownames(prediction$data)[prediction$data$truth == FALSE & prediction$data$response == FALSE] 
+    
+  }else if(class == "FP"){
+    
+    name <- rownames(prediction$data)[prediction$data$truth == FALSE & prediction$data$response == TRUE] 
+    
+  }else if(class == "FN"){
+    
+    name <- rownames(prediction$data)[prediction$data$truth == TRUE & prediction$data$response == FALSE] 
+    
+  }
+  
+  return(name)
+  
+}

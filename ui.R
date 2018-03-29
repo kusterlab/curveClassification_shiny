@@ -24,7 +24,8 @@ shinyUI(
             ),
             
             navbarPage('Curve classification' ,   
-                       
+                       conditionalPanel(condition="$('html').hasClass('shiny-busy')",
+                                        tags$div("Loading...",id="loadmessage")),
                        tabPanel('Data import' ,value = 1  , icon = icon(name = "fa-database" ,class = "fa fa-database" , lib = "font-awesome") , 
                                 fluidPage(
                                   sidebarLayout(
@@ -169,7 +170,24 @@ shinyUI(
                                 
                                 
                        )   , 
-                       tabPanel("Validate Model"),
+                       tabPanel("Validate Model",
+                                
+                                sidebarPanel(width = 3 , 
+                                             
+                                             uiOutput("validate.ui")
+                                             
+                                             ),
+                                mainPanel(width = 9,
+                                          tabsetPanel(
+                                            tabPanel("False Positives" , 
+                                                     uiOutput("plotsFP")),
+                                            tabPanel("False Negatives" , 
+                                                     uiOutput("plotsFN"))
+                                          ))
+                                
+                                
+                                
+                                ),
                        tabPanel("Predict" , 
                                 
                                 sidebarPanel(width = 3,
@@ -184,9 +202,10 @@ shinyUI(
                                                      
                                                      
                                             ) , 
-                                            tabPanel("Nearest Neighbors"
+                                            tabPanel("Nearest Neighbors",
                                                      
-                                                     
+                                                     DT::dataTableOutput("predictionDataNN"),
+                                                     splitLayout(plotOutput("nearestNeighborTRUE")  , plotOutput("nearestNeighborEx")  ,plotOutput("nearestNeighborFALSE") , cellWidths = c("33%", "33%" ,"33%" ))    
                                                      
                                                      
                                             ))

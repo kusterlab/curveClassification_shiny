@@ -30,6 +30,8 @@ shinyServer(function(input, output , session) {
   
   plotfun_Env <- new.env()
   
+  plotfun <- NULL
+  
   data.prediction.download <- NULL
   
   output$import.ui <- renderUI({
@@ -709,10 +711,136 @@ shinyServer(function(input, output , session) {
   })
   
   
+  ####Validate Model ####
   
   
+  output$validate.ui <- renderUI({
+    sidebarMenu(
+    radioButtons("validate.modelSelection" , label = "Select a model!" , choices = c("model" , "optimized model") , selected = "model" ),
+    br(),
+    
+    checkboxInput("validate.allData" , label = "only for test data" , value = T),
+    br(),
+    
+    actionButton("validate.go" , label = "generate plots")
+    
+    
+    )
+    
+    
+    
+  })
+  
+
   
   
+  output$plotsFN <- renderUI({
+    
+    if(input$validate.modelSelection == "optimized model"){
+      
+      tmpModel <- data$modelretrained
+      
+    }else{
+      
+      tmpModel <- data$model
+      
+    }
+    
+    validate(need(!is.null(tmpModel) , "The selected model is not available"),
+             need(!is.null(plotfun) , "No plot function available"))
+    
+    
+    if(input$validate.allData){
+      
+      pred <- predict(tmpModel , newdata = tmpModel$test.data)
+      
+      
+    }else{
+      
+      #TODO: write in the stuff how to combine training and test data
+    }
+    
+    
+    names <- predictionNames(pred , "FN")
+    
+    d <- tmpModel$test.data[names , ]
+    
+    if(nrow(d) == 0){
+      return(NULL)
+    }
+    
+    
+    
+    lapply(1:nrow(d) ,  function (x, plotfun , data) {
+      
+      
+      output[[paste0("plotFN",x)]] <- renderPlot({
+        
+        temp <-  plotfun(data[x , ])
+        
+        
+        
+      } )
+      
+      plotOutput(paste0("plotFN",x))
+      
+    } , plotfun = plotfun , data = d)
+    
+  })
+  
+  
+  output$plotsFP <- renderUI({
+    
+    if(input$validate.modelSelection == "optimized model"){
+      
+      tmpModel <- data$modelretrained
+      
+    }else{
+      
+      tmpModel <- data$model
+      
+    }
+    
+    validate(need(!is.null(tmpModel) , "The selected model is not available"),
+             need(!is.null(plotfun) , "No plot function available"))
+    
+    
+    if(input$validate.allData){
+      
+      pred <- predict(tmpModel , newdata = tmpModel$test.data)
+      
+      
+    }else{
+      
+      #TODO: write in the stuff how to combine training and test data
+    }
+    
+    
+    names <- predictionNames(pred , "FP")
+    
+    d <- tmpModel$test.data[names , ]
+    
+    if(nrow(d) == 0){
+      return(NULL)
+    }
+    
+    
+    lapply(1:nrow(d) ,  function (x, plotfun , data) {
+      
+      
+      output[[paste0("plotFP",x)]] <- renderPlot({
+        
+        temp <-  plotfun(data[x , ])
+        
+        
+        
+      } )
+      
+      plotOutput(paste0("plotFP",x))
+      
+    } , plotfun = plotfun , data = d)
+    
+  })
   
   
   #### predict #####
@@ -818,19 +946,21 @@ shinyServer(function(input, output , session) {
   
 
   
-  observeEvent(input$predictionData_rows_selected,{
+  observe({
     
     d <- data.prediction.download[input$predictionData_rows_selected , ]
     
 
-    
-    plotfun <<- plotfun_Env[[ (grep("^plot_" , ls(envir = plotfun_Env) , value = T))]]
-    
-
+   
     
     output$plotsPrediction <- renderUI({
       
+      validate(need(!is.null(plotfun) , message = "No plotfunction found"))
       
+        if(is.null(d) || dim(d)[1] < 1 ){
+          
+          return(NULL)
+        }else{
         
         lapply(1:nrow(d) ,  function (x, plotfun , data) {
           
@@ -846,13 +976,95 @@ shinyServer(function(input, output , session) {
             plotOutput(paste0("plot1",x))
           
         } , plotfun = plotfun , data = d)
-        
+        }   
     })
-    
+   
   })
  
   
   output$predict.Download <- downloadHandler(filename = function() {paste0(input$predict.csv$name , "predicted.csv")} , content = function(file){write.csv(data.prediction.download , file)})
+  
+    ##### nearest Neighbor Predict ####
+  
+  
+  observeEvent(data$pred , {
+    
+    output$predictionDataNN <- DT::renderDataTable({
+      
+      validate(need(class(data$pred) != "try-error" , "No prediction possible, please check if the features are similar to the training data"))
+      isolate({
+        
+        d <- data$pred$data[,c("prob.TRUE" , "response")]
+        
+        
+        colnames(d) <- c("probability" , data$pred$task.desc$target )
+        
+        d <- cbind(data$newdata , d)
+        
+        d[,ncol(d)] <- ifelse(d[,ncol(d)] == "TRUE" , data$model$positiveClass , "")
+        
+        data.prediction.download <<- d
+        
+        return(d)
+      })
+      
+    } ,selection = 'single')
+    
+    
+  })
+  
+  observe({
+  
+    if(!is.null(data$model$funList)){
+      newData <- evaluateFunList(funList = data$model$funList , data = data.prediction.download[input$predictionDataNN_rows_selected , ])
+    }else{
+      newData <- data.prediction.download[input$predictionDataNN_rows_selected , ]
+    }
+    
+   
+  
+    
+    validate(need(!is.null(plotfun) , "No plot function aviable"),
+             need(!is.null(data$model) , "No model selected"))
+    
+    
+    neighbours <- try(nearestNeighbors(uniqueIdentifier = NULL , searchspace = data$model$modelpars$train.data , newData = newData , targetColumn = data$pred$task.desc$target))
+    
+    output$nearestNeighborTRUE <- renderPlot({
+      
+    
+      if(class(neighbours) == "try-error"){
+        return(NULL)
+      }
+      plotfun(neighbours[[1]][1,])
+    
+  })
+    output$nearestNeighborEx <- renderPlot({
+      
+      if(class(neighbours) == "try-error"){
+        return(NULL)
+      }
+      
+      plotfun(neighbours[[1]][2,])
+      
+      
+      
+    })
+    
+    output$nearestNeighborFALSE <- renderPlot({
+      
+      if(class(neighbours) == "try-error"){
+        return(NULL)
+      }
+      
+      plotfun(neighbours[[1]][3,])
+      
+      
+      
+    })
+  
+  })
+  
   
   ##### data summary #####
   
@@ -1017,6 +1229,12 @@ shinyServer(function(input, output , session) {
       
      
     }
+    
+    if(length(grep("^plot_" , ls(envir = plotfun_Env))) == 1){
+      
+      plotfun <<- plotfun_Env[[ (grep("^plot_" , ls(envir = plotfun_Env) , value = T))]]
+    }
+    
     
     output$plotEnv_list<-  renderTable({
       
