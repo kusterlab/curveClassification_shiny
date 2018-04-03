@@ -7,6 +7,13 @@ require(GGally)
 require(shinyjs)
 require(beanplot)
 
+
+## Limits the upload size to 1GB
+
+options(shiny.maxRequestSize=1000*1024^2)
+
+
+
 #source("V://users_files/Florian Seefried/Master/R_project/Masterthesis/functions/GenerateModel.R")
 
 #source("V://users_files/Florian Seefried/Master/R_project/Masterthesis/functions/GlobalFeatureGenerationFunctions.R")
@@ -23,6 +30,7 @@ shinyServer(function(input, output , session) {
   # 'size and 'datapath'
   
   ##### data import #####
+  
   
   data <- reactiveValues(data = NULL , newFeatures = NULL , model = NULL , train = NULL , test = NULL , newdata = NULL , pred = NULL , evaluated = NULL , modelretrained = NULL)
   
@@ -737,7 +745,7 @@ observeEvent(input$validate.go , {
   
   
   output$plotsFN <- renderUI({
-    
+    isolate({
     if(input$validate.modelSelection == "optimized model"){
       
       tmpModel <- data$modelretrained
@@ -791,13 +799,13 @@ observeEvent(input$validate.go , {
     } , plotfun = plotfun , data = d)
     
   })
-  
+})
 })
 
 observeEvent(input$validate.go , {
 
   output$plotsFP <- renderUI({
-    
+    isolate({
     if(!is.null(input$validate.modelSelection) && input$validate.modelSelection == "optimized model"){
       
       tmpModel <- data$modelretrained
@@ -849,6 +857,7 @@ observeEvent(input$validate.go , {
       
     } , plotfun = plotfun , data = d)
     
+    })
   })
 })
   
