@@ -897,6 +897,9 @@ observeEvent(input$validate.go , {
       checkboxInput("predict.header", "Header", TRUE),
       
       selectInput("predict.sep", "Separator", selected = ",", choices = c(Comma = ",", Semicolon = ";", Tab = "\t")),
+      br(),
+      #TODO: Think about the output as it is implementet now
+      checkboxInput("predict.NAs" , label = "Force NA containing observations to probability of 0 ?" , value = T),
       
       
       if(!is.null(data$newdata) && !is.null(data$model) ){
@@ -950,7 +953,7 @@ observeEvent(input$validate.go , {
   observeEvent(input$predict.go ,{
     
     
-    data$pred <- try(predict(data$model , newdata = data$newdata))
+    data$pred <- try(predict(data$model , newdata = data$newdata , NAtoZero = input$predict.NAs))
     
     if(class(data$pred)[1] != "try-error"){
       
