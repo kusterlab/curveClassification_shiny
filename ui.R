@@ -241,7 +241,8 @@ shinyUI(
                                                       sidebarPanel( width = 3 , 
                                                                     fileInput("plotScript" , label = "Select a plot script")
                                                       ),
-                                                      mainPanel(width = 9 , tableOutput("plotEnv_list"))
+                                                      mainPanel(width = 9 , tableOutput("plotEnv_list") ,br() ,  h4("Testplot") , 
+                                                                plotOutput("testplot"))
                                              )
                                            ))
                        )

@@ -36,6 +36,8 @@ shinyServer(function(input, output , session) {
   
   fgf.List <- NULL
   
+  tmp.fgf.List <- NULL
+  
   plotfun_Env <- new.env()
   
   plotfun <- NULL
@@ -190,6 +192,11 @@ shinyServer(function(input, output , session) {
     
     output$fgf.messages <- renderText(isolate({
       
+      if(is.null(tmp.fgf.List)){
+        
+        tmp.fgf.List <<- fgf.List
+      }
+      
       patternFun <- strsplit(input$fgf.function.Pattern , ";")[[1]]
       
       if(input$fgf.function.paired){
@@ -208,11 +215,11 @@ shinyServer(function(input, output , session) {
       }
       
       
-      if(!is.null(input$fgf.function) && is.null(fgf.List)){
+      if(!is.null(input$fgf.function) && is.null(tmp.fgf.List)){
         
         validate(need({length(grep(paste0(patternFun , collapse = "|") , names(data$data))) > 0}, message = "The specified pattern does not occur in the dataset!"))
         
-        fgf.List <<- generateFunctionList(input$fgf.function , patternFun)
+        tmp.fgf.List <<- generateFunctionList(input$fgf.function , patternFun)
         
       }else if(!is.null(input$fgf.function)){
         
@@ -220,15 +227,15 @@ shinyServer(function(input, output , session) {
         
         tmp <- generateFunctionList(input$fgf.function , patternFun)
         
-        fgf.List <<- c(fgf.List , tmp)
+        tmp.fgf.List <<- c(tmp.fgf.List , tmp)
       }
       
       
-      validate(need(!is.null(fgf.List), message = "No feature generation functions selected."),
+      validate(need(!is.null(tmp.fgf.List), message = "No feature generation functions selected."),
                need(!is.null(data$data) , message = "No data set selected."))
       
-      
-      d <- try(evaluateFunList(fgf.List , data$data) , silent = T)
+      # length(fgf.List):length(tmp.fgf.List) nessesary to avoid duplications in the column
+      d <- try(evaluateFunList(tmp.fgf.List[(length(fgf.List)+1):length(tmp.fgf.List)] , data$data) , silent = T)
       
       validate(need(class(d) != "try-error" , message = "An error occured during feature calculation no features calculated!"))
       data$newFeatures <<- d
@@ -243,6 +250,10 @@ shinyServer(function(input, output , session) {
     
     req(!is.null(data$newFeatures))
     data$data <<- data$newFeatures
+    fgf.List <<- tmp.fgf.List
+    
+    data$newFeatures <- NULL
+    tmp.fgf.List <- NULL
     
     
     
@@ -1278,7 +1289,17 @@ observeEvent(input$validate.go , {
       ls(envir = plotfun_Env)} , colnames = F)
   })
   
-  
+  output$testplot <- renderPlot({
+    
+    validate(need(!is.null(data$data) , message = "No data avaiable!"),
+             need(!is.null(plotfun) , message = "No plot function avaiable!"))
+      
+      plotfun(data$data[1,])
+      
+   
+    
+    
+  })
   
   
   
