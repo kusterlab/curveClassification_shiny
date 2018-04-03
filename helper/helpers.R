@@ -207,6 +207,14 @@ predict.WrappedCombiModel <- function(combinedModel , newdata , NAtoZero = T){
     stop("Erorr: The features which could be calculated from the functions stored in the WrappedCombiModel do not match the features used to train the model")
   }
   
+  #nessesary to adjust the factor levels to those used for the training, grep is nessesary to discard the training dataset
+  
+  for(n in grep(a$model$task.desc$target , names(a$model$factor.levels) , invert = T , value = T)){
+
+    newdata[,n] <- factor(x = newdata[,n] , levels = combinedModel$model$factor.levels[[n]])
+    
+  }
+
   
   newdata <- convertClass(newdata)
   

@@ -57,7 +57,10 @@ shinyServer(function(input, output , session) {
       
       selectInput("import.quote", "Quote", selected = '"',
                   
-                  choices = c(None = "", "Double Quote" = '"', "Single Quote" = "'")))
+                  choices = c(None = "", "Double Quote" = '"', "Single Quote" = "'"))
+     
+      )
+    
     
   })
   
@@ -74,8 +77,15 @@ shinyServer(function(input, output , session) {
       
       data$data <- read.csv(f, header = input$import.header, sep = input$import.sep,
                             quote = input$import.quote)
+      
     }
+    
+    
+    
+    
   })
+  
+ 
   
   
   
@@ -930,7 +940,6 @@ observeEvent(input$validate.go , {
     
     
     data$pred <- try(predict(data$model , newdata = data$newdata))
-    
     
     if(class(data$pred)[1] != "try-error"){
       
