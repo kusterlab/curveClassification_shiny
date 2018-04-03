@@ -6,6 +6,7 @@ require(mlr)
 require(GGally)
 require(shinyjs)
 require(beanplot)
+require(data.table)
 
 
 ## Limits the upload size to 1GB
@@ -49,7 +50,7 @@ shinyServer(function(input, output , session) {
     sidebarMenu(
       
       fileInput("import.csv", "Choose CSV File",
-                accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
+                accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv") , multiple = T),
       
       checkboxInput("import.header", "Header", TRUE),
       
@@ -69,7 +70,7 @@ shinyServer(function(input, output , session) {
   
   observe({ 
     
-    f = input$import.csv$datapath
+    f <- input$import.csv$datapath
     
     if (is.null(f)) {
       
@@ -77,13 +78,13 @@ shinyServer(function(input, output , session) {
       
     } else {
       
-      data$data <- read.csv(f, header = input$import.header, sep = input$import.sep,
-                            quote = input$import.quote)
+      data$data <- as.data.frame(data.table::rbindlist(lapply(f, read.csv, header = input$import.header, sep = input$import.sep,
+                                    quote = input$import.quote) , use.names = TRUE, fill = TRUE))
       
     }
     
     
-    
+    print(data$data)
     
   })
   
@@ -518,7 +519,7 @@ shinyServer(function(input, output , session) {
       
       fileInput("optimize.model" , "Choose model" , accept = ".RData"),
       
-      fileInput("optimize.newdata" , "Choose reannotated data" , accept = ".csv"),
+      fileInput("optimize.newdata" , "Choose reannotated data" , accept = ".csv" , multiple = T),
       
       checkboxInput("optimize.header", "Header", TRUE),
       
@@ -556,7 +557,8 @@ shinyServer(function(input, output , session) {
       
     } else {
       
-      data$evaluated <- read.csv(f, header = input$optimize.header, sep = input$optimize.sep)
+      data$evaluated <- as.data.frame(data.table::rbindlist(lapply(f, read.csv, header = input$optimize.header, sep = input$optimize.sep) , use.names = TRUE, fill = TRUE))
+      
     }
     
     
@@ -927,7 +929,9 @@ observeEvent(input$validate.go , {
       
     } else {
       
-      data$newdata <- read.csv(f, header = input$predict.header, sep = input$predict.sep)
+      data$newdata <- as.data.frame(data.table::rbindlist(lapply(f, read.csv, header = input$predict.header, sep = input$predict.sep) , use.names = TRUE, fill = TRUE))
+      
+      
     }
     
   })
