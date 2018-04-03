@@ -409,7 +409,7 @@ nearestNeighbors <- function(uniqueIdentifier , searchspace , newData , nNeighbo
   
   searchspace <- rbind(searchspace , newData)
   
-  targets <- searchspace$Targets
+  targets <- searchspace[ , targetColumn]
   
   searchdf <- normalize(x = searchspace[,grep(targetColumn , names(searchspace) , invert = T)] , method = "standardize" )
   
