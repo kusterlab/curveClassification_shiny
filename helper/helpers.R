@@ -104,6 +104,10 @@ removeNAs <- function(data){
 
 generateModel <- function(classifier , us.rate , features , data , targetVariable , positiveClass , hyperpars = list() , estimatingThreshold = F , tprThreshold = 0.995){
   
+  #InitialTrainData to have it consistent with testdata
+  
+  initialData <- data
+  
   #Generating the initial Learner
   learner <- makeLearner(classifier , predict.type = "prob" , par.vals = hyperpars)
   
@@ -149,7 +153,7 @@ generateModel <- function(classifier , us.rate , features , data , targetVariabl
   model <- mlr::train(learner = learner , task = task)
   
   
-  output <- list(model = model , optimalthreshold = optimalthreshold , train.data = data , task = task , learner = learner)
+  output <- list(model = model , optimalthreshold = optimalthreshold , train.data = initialData , task = task , learner = learner)
   
   return(output)
   
@@ -242,7 +246,7 @@ predict.WrappedCombiModel <- function(combinedModel , newdata , NAtoZero = T){
 }
 
 
-retrain <- function(combinedModel , newdata, estimatingThreshold = F , tprThreshold = 0.995 , keepData = F){
+retrain <- function(combinedModel , newdata , estimatingThreshold = F , tprThreshold = 0.995 , keepData = F){
   
   if(! all( combinedModel$model$features %in% colnames(newdata) ) && !is.null(combinedModel[["funList"]])){
     
@@ -256,34 +260,38 @@ retrain <- function(combinedModel , newdata, estimatingThreshold = F , tprThresh
     stop("Erorr: The features which could be calculated from the functions stored in the WrappedCombiModel do not match the features used to train the model")
   }
   
-  newdataWithfeatures <- newdata[,c(combinedModel$model$features , combinedModel$model$task.desc$target)]
+ 
   
-  newdataWithfeatures <- removeNAs( data = newdataWithfeatures )
-  
-  newdataWithfeatures <- convertClass(newdataWithfeatures)
-  
-  ntrain <- sample(1:nrow(newdataWithfeatures) , 0.8*nrow(newdataWithfeatures))
+  ntrain <- sample(1:nrow(newdata) , 0.8*nrow(newdata))
   
   #for test data the features are not subseted
   ntest <- setdiff(1:nrow(newdata) , ntrain)
+  
+
   
   if(keepData){
   
   combinedModel$test.data <- rbind(combinedModel$test.data , newdata[ntest , names(combinedModel$test.data) ])
   
-  combinedModel$modelpars$train.data <- rbind(combinedModel$modelpars$train.data , newdataWithfeatures[ntrain , c(combinedModel$model$features , combinedModel$model$task.desc$target) ])
+  combinedModel$modelpars$train.data <- rbind(combinedModel$modelpars$train.data , newdata[ntrain , names(combinedModel$modelpars$train.data)])
   
   }else{
     
     combinedModel$test.data <-  newdata[ntest , names(combinedModel$test.data) ]
     
-    combinedModel$modelpars$train.data <-  newdataWithfeatures[ntrain , c(combinedModel$model$features , combinedModel$model$task.desc$target) ]
+    combinedModel$modelpars$train.data <-  newdata[ntrain , names(combinedModel$modelpars$train.data) ]
     
     
     
   }
   
-  task <- makeClassifTask(id = combinedModel$model$task.desc$id , data =  combinedModel$modelpars$train.data , target = combinedModel$model$task.desc$target , positive = combinedModel$model$task.desc$positive)
+  newdata <- combinedModel$modelpars$train.data[,c(combinedModel$model$features , combinedModel$model$task.desc$target)]
+  
+  newdata <- removeNAs( data = newdata )
+  
+  newdata <- convertClass(newdata)
+  
+  task <- makeClassifTask(id = combinedModel$model$task.desc$id , data =  newdata , target = combinedModel$model$task.desc$target , positive = combinedModel$model$task.desc$positive)
   
   
   combinedModel$model <- mlr::train(learner = combinedModel$modelpars$learner , task = task)

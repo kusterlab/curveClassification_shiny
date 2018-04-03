@@ -595,6 +595,7 @@ shinyServer(function(input, output , session) {
         
         d <- data$evaluated
         
+
         
         d[,data$model$model$task.desc$target] <- ifelse(d[,data$model$model$task.desc$target] == data$model$positiveClass , TRUE , FALSE)
         
@@ -768,8 +769,8 @@ observeEvent(input$validate.go , {
       
       
     }else{
+      pred <- predict(tmpModel , newdata = rbind(tmpModel$test.data , tmpModel$modelpars$train.data))
       
-      #TODO: write in the stuff how to combine training and test data
     }
     
     
@@ -829,7 +830,7 @@ observeEvent(input$validate.go , {
       
     }else{
       
-      #TODO: write in the stuff how to combine training and test data
+      pred <- predict(tmpModel , newdata = rbind(tmpModel$test.data , tmpModel$modelpars$train.data))
     }
     
     
@@ -1043,13 +1044,16 @@ observeEvent(input$validate.go , {
     }
     
    
-  
+    
     
     validate(need(!is.null(plotfun) , "No plot function aviable"),
              need(!is.null(data$model) , "No model selected"))
     
+    searchspace <- data$model$modelpars$train.data[,c(data$model$model$features , data$model$model$task.desc$target)]
     
-    neighbours <- try(nearestNeighbors(uniqueIdentifier = NULL , searchspace = data$model$modelpars$train.data , newData = newData , targetColumn = data$pred$task.desc$target))
+    searchspace <- removeNAs(searchspace)
+    
+    neighbours <- try(nearestNeighbors(uniqueIdentifier = NULL , searchspace = searchspace , newData = newData , targetColumn = data$pred$task.desc$target))
     
     output$nearestNeighborTRUE <- renderPlot({
       
