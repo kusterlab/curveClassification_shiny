@@ -70,26 +70,36 @@ shinyUI(
                                                  uiOutput("newModel.ui")
                                     ),
                                     mainPanel(width = 9 , 
-                                              
                                               wellPanel(
                                                 h4("Messages") , 
                                                 span(textOutput("newModelMessages" ) , style="color:red")
                                               ),
                                               br(),
-                                              
-                                              
-                                              h4("Confusion matrix"),
-                                              
-                                              tableOutput("ConfusionMatrix"), br(), 
-                                              
-                                              
-                                              box(plotOutput("performanceVsThreshold"),
-                                                  br(),
-                                                  
-                                                  h4("Probability distribution"), 
-                                                  plotOutput("probabilityDistribution"))
-                                              
-                                              
+                                              tabsetPanel(tabPanel("Performance" , 
+                                                                   h4("Confusion matrix"),
+                                                                   
+                                                                   tableOutput("ConfusionMatrix"), br(), 
+                                                                   
+                                                                   
+                                                                   box(plotOutput("performanceVsThreshold"),
+                                                                       br(),
+                                                                       
+                                                                       h4("Probability distribution"), 
+                                                                       plotOutput("probabilityDistribution"))             
+                                                                   ),
+                                                          tabPanel("Data" , 
+                                                                   
+                                                                   DT::dataTableOutput("generateModelData"),
+                                                                   uiOutput("plotsGenerateModels")
+                                                                   
+                                                                   )
+                                                          
+                                                          
+                                                          
+                                                          
+                                                          )
+                                             
+                                               
                                               
                                     )
                                     
@@ -108,13 +118,9 @@ shinyUI(
                                             h4("Messages"),
                                             span(textOutput("optimizeMessages" ) , style="color:red") ),
                                           tabsetPanel(
-                                            tabPanel("reevaluated data" , 
-                                                     
-                                                     DT::dataTableOutput("optimizeNewdata")
-                                                     
-                                            ),
                                             
-                                            tabPanel("model performance" , 
+                                            
+                                            tabPanel("Performance" , 
                                                      column(width = 4.5 , 
                                                             box(
                                                               
@@ -130,9 +136,7 @@ shinyUI(
                                                                   
                                                                   h5("Probability distribution"), 
                                                                   plotOutput("probabilityDistribution.old"))
-                                                              
-                                                              
-                                                              
+                                                               
                                                               
                                                             )
                                                             
@@ -154,14 +158,17 @@ shinyUI(
                                                                   h5("Probability distribution"), 
                                                                   plotOutput("probabilityDistribution.new"))
                                                               
-                                                              
-                                                              
-                                                              
                                                             )
                                                             
                                                             
                                                      )
-                                            )  
+                                            ),
+                                            tabPanel("Data" , 
+                                                     
+                                                     DT::dataTableOutput("optimizeNewdata"),
+                                                     uiOutput("plotsOptimizeModel")
+                                                     
+                                            )
                                           )
                                           
                                           
@@ -205,6 +212,9 @@ shinyUI(
                                             tabPanel("Nearest Neighbors",
                                                      
                                                      DT::dataTableOutput("predictionDataNN"),
+                                                     h3("Nearest neighbor plots of the selected observation"),
+                                                     br(),
+                                                     splitLayout(h4("nearest neighbor: TRUE") , h4("Selected observation") , h4("nearest neighbor: FALSE"), cellWidths = c("33%", "33%" ,"33%" )), 
                                                      splitLayout(plotOutput("nearestNeighborTRUE")  , plotOutput("nearestNeighborEx")  ,plotOutput("nearestNeighborFALSE") , cellWidths = c("33%", "33%" ,"33%" ))    
                                                      
                                                      

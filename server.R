@@ -33,7 +33,7 @@ shinyServer(function(input, output , session) {
   ##### data import #####
   
   
-  data <- reactiveValues(data = NULL , newFeatures = NULL , model = NULL , train = NULL , test = NULL , newdata = NULL , pred = NULL , evaluated = NULL , modelretrained = NULL)
+  data <- reactiveValues(data = NULL , newFeatures = NULL , model = NULL , newdata = NULL , pred = NULL , evaluated = NULL , modelretrained = NULL)
   
   fgf.List <- NULL
   
@@ -44,6 +44,13 @@ shinyServer(function(input, output , session) {
   plotfun <- NULL
   
   data.prediction.download <- NULL
+  
+  manThreshold <- NULL
+  
+  tmpDataGenerateModel <- NULL
+  
+  tmpDataOptimizeModel <- NULL
+  
   
   output$import.ui <- renderUI({
     
@@ -386,7 +393,7 @@ shinyServer(function(input, output , session) {
       
       if(!is.null(data$model)){
         
-        downloadButton("saveModel" , "Save model")
+        downloadButton("saveModel" , "Download model")
         
       }
       
@@ -399,6 +406,8 @@ shinyServer(function(input, output , session) {
   })
   
   output$saveModel <- downloadHandler(filename = function(){"model.RData"} , content = function(file){
+    
+    data$model[["plotfun_Env"]] <- plotfun_Env
     
     saveRDS(data$model , file = file)
     
@@ -448,16 +457,16 @@ shinyServer(function(input, output , session) {
             d[,TargetColumn()] <- ifelse(d[,TargetColumn()] == PositiveClass() , TRUE , FALSE)
             
             
-            data$train <- d[ n , ]
+            data_train <- d[ n , ]
             
-            data$test <- d[ setdiff( 1:dim(data$data)[1] , n) , ]
+            data_test <- d[ setdiff( 1:dim(data$data)[1] , n) , ]
             
             usedFeatures <- grep(paste0(paste0("^" , c(features() , TargetColumn()), "$") , collapse = "|") , names(d) , invert = T , value = T)
             
-            data$model <- generateModel(classifier = "classif.randomForest" , us.rate = usRate() , features = usedFeatures , data = data$train , targetVariable = TargetColumn() ,positiveClass = "TRUE" , estimatingThreshold = tuneThreshold() , tprThreshold = input$newModel.tprTuneValue )
+            data$model <- generateModel(classifier = "classif.randomForest" , us.rate = usRate() , features = usedFeatures , data = data_train , targetVariable = TargetColumn() , positiveClass = "TRUE" , estimatingThreshold = tuneThreshold() , tprThreshold = input$newModel.tprTuneValue )
             
             
-            data$model <- combineModel(trainOutput = data$model , featureFunctionList = fgf.List , test.data = data$test , positveClass = PositiveClass())
+            data$model <- combineModel(trainOutput = data$model , featureFunctionList = fgf.List , test.data = data_test , positveClass = PositiveClass())
             
             
             return("Model trained successfull!")
@@ -474,9 +483,78 @@ shinyServer(function(input, output , session) {
     
   })
   
+  output$generateModelData <-  DT::renderDataTable({
+    
+    validate(need(!is.null(data$model) , "No model avaiable!"))
+    
+    isolate({
+      pred <- try(predict(data$model , newdata = data$model$data))
+      
+      if(!is.null(data$model$threshold)){
+        
+        pred <- setThreshold(pred , data$model$threshold)
+      }
+      
+      validate(need(class(pred) != "try-error" , "No prediction possible, please check if the features are similar to the training data"))
+      
+      namesToExtract <- grep("prob.FALSE" , names(pred$data) , invert = T)
+      
+      d <- pred$data[,namesToExtract]
+      
+      
+      colnames(d) <- gsub("prob.TRUE" , "probability" , colnames(d))
+      colnames(d) <- gsub("response" , pred$task.desc$target , colnames(d))
+      
+      
+      tmpDataGenerateModel <<- cbind(data$model$data , d)
+      
+      
+      
+      return(DT::datatable(data = tmpDataGenerateModel , filter = 'top'))
+    })
+    
+  }, caption = "Data base of model")
+  
+  
+  
+  observe({
+    
+    d <- tmpDataGenerateModel[input$generateModelData_rows_selected , ]
+    
+    
+    output$plotsGenerateModels <- renderUI({
+      
+      validate(need(!is.null(plotfun) , message = "No plotfunction found"))
+      
+      if(is.null(d) || dim(d)[1] < 1 ){
+        
+        return(NULL)
+      }else{
+        
+        lapply(1:nrow(d) ,  function (x, plotfun , data) {
+          
+          
+          output[[paste0("plotGenerateModel",x)]] <- renderPlot({
+            
+            temp <-  plotfun(data[x , ])
+            
+            
+            
+          } )
+          
+          plotOutput(paste0("plotGenerateModel",x))
+          
+        } , plotfun = plotfun , data = d)
+      }   
+    })
+    
+  })
+  
+  
+  
   observeEvent( data$model, {
     
-    pred <- predict(data$model , newdata = data$model$test.data)
+    pred <- predict(data$model , newdata = data$model$data[ data$model$data$group == "test" , ])
     
     if(!is.null(data$model$threshold)){
       
@@ -578,7 +656,16 @@ shinyServer(function(input, output , session) {
       
     }
     
-    
+    if(!is.null(data$model[["plotfun_Env"]])){
+      
+      plotfun_Env <<- data$model$plotfun_Env
+      
+      if(length(grep("^plot_" , ls(envir = plotfun_Env))) == 1){
+        
+        plotfun <<- plotfun_Env[[ (grep("^plot_" , ls(envir = plotfun_Env) , value = T))]]
+      }
+      
+    }
     
   })
   
@@ -608,24 +695,13 @@ shinyServer(function(input, output , session) {
         return(txt)
       }
       
-      
-      
-      
-      
-      
-        
+       
         d <- data$evaluated
-        
-
-        
+    
         d[,data$model$model$task.desc$target] <- ifelse(d[,data$model$model$task.desc$target] == data$model$positiveClass , TRUE , FALSE)
         
         data$modelretrained <- retrain(combinedModel = data$model , newdata = d , estimatingThreshold = tuneThresholdOptimize() , tprThreshold = input$optimize.tprTuneValue , keepData = input$optimize.keepData)
-        
-        
-        
-        
-        
+
         return("Model retrained successfull")
       })
       
@@ -638,9 +714,9 @@ shinyServer(function(input, output , session) {
   
   observeEvent(data$modelretrained , {
     
-    pred <- predict(data$model , newdata = data$modelretrained$test.data)
+    pred <- predict(data$model , newdata = data$modelretrained$data[data$modelretrained$data$group == "test",])
     
-    predNewMod <- predict(data$modelretrained , newdata = data$modelretrained$test.data)
+    predNewMod <- predict(data$modelretrained , newdata = data$modelretrained$data[data$modelretrained$data$group == "test",])
     
     if(!is.null(data$model$threshold)){
       
@@ -705,9 +781,72 @@ shinyServer(function(input, output , session) {
   
   
   
-  output$optimizeNewdata <-  DT::renderDataTable(data$evaluated, caption = "New annotated data")
+  output$optimizeNewdata <-  DT::renderDataTable({
+    
+    validate(need(!is.null(data$modelretrained) , "No retrained model avaiable!"))
+    
+    isolate({
+    pred <- try(predict(data$modelretrained , newdata = data$modelretrained$data))
+    
+    if(!is.null(data$modelretrained$threshold)){
+      
+      pred <- setThreshold(pred , data$modelretrained$threshold)
+    }
+    
+    validate(need(class(pred) != "try-error" , "No prediction possible, please check if the features are similar to the training data"))
+    
+      namesToExtract <- grep("prob.FALSE" , names(pred$data) , invert = T)
+      
+      d <- pred$data[,namesToExtract]
+      
+      
+      colnames(d) <- gsub("prob.TRUE" , "probability" , colnames(d))
+      colnames(d) <- gsub("response" , pred$task.desc$target , colnames(d))
+      
+      
+      tmpDataOptimizeModel <<- cbind(data$modelretrained$data , d)
+      
+      
+      
+      return(DT::datatable(data = tmpDataOptimizeModel  , filter = 'top'))
+    })
+    
+    
+    
+    }, caption = "Data base of model")
   
   
+  observe({
+    
+    d <- tmpDataOptimizeModel[input$optimizeNewdata_rows_selected , ]
+    
+  
+    
+    output$plotsOptimizeModel <- renderUI({
+      
+      validate(need(!is.null(plotfun) , message = "No plotfunction found"))
+      
+      if(is.null(d) || dim(d)[1] < 1 ){
+        
+        return(NULL)
+      }else{
+        
+        lapply(1:nrow(d) ,  function (x, plotfun , data) {
+          
+          
+          output[[paste0("plotOptimizeModel",x)]] <- renderPlot({
+            
+            temp <-  plotfun(data[x , ])
+            
+          } )
+          
+          plotOutput(paste0("plotOptimizeModel",x))
+          
+        } , plotfun = plotfun , data = d)
+      }   
+    })
+    
+  })
   
   output$optimizeExchangeButton <- renderUI({
     
@@ -738,6 +877,10 @@ shinyServer(function(input, output , session) {
   })
   
   output$optimizeSaveModel<- downloadHandler(filename = function(){"reevaluatedModel.RData"} , content = function(file){
+    
+    data$modelretrained[["plotfun_Env"]] <- plotfun_Env
+    
+    
     saveRDS(data$modelretrained , file = file)
     
   })
@@ -786,18 +929,19 @@ observeEvent(input$validate.go , {
     
     if(input$validate.allData){
       
-      pred <- predict(tmpModel , newdata = tmpModel$test.data)
+      pred <- predict(tmpModel , newdata = tmpModel$data[tmpModel$data$group == "test", ])
       
       
     }else{
-      pred <- predict(tmpModel , newdata = rbind(tmpModel$test.data , tmpModel$modelpars$train.data))
+      pred <- predict(tmpModel , newdata = tmpModel$data)
       
     }
     
     
     names <- predictionNames(pred , "FN")
     
-    d <- tmpModel$test.data[names , ]
+    #TOCHECK: check if works
+    d <- tmpModel$data[names , ]
     
     if(nrow(d) == 0){
       return(NULL)
@@ -845,19 +989,21 @@ observeEvent(input$validate.go , {
     
     
     if(input$validate.allData){
-      
-      pred <- predict(tmpModel , newdata = tmpModel$test.data)
+      #Bug if the new and the old model should be compared since the data stored in the model is used
+      pred <- predict(tmpModel , newdata = tmpModel$data[tmpModel$data$group == "test" , ])
       
       
     }else{
       
-      pred <- predict(tmpModel , newdata = rbind(tmpModel$test.data , tmpModel$modelpars$train.data))
+      pred <- predict(tmpModel , newdata = tmpModel$data)
     }
     
-    
+    #TOCHECK if its OK with rownames
     names <- predictionNames(pred , "FP")
     
-    d <- tmpModel$test.data[names , ]
+    
+    
+    d <- tmpModel$data[names , ]
     
     if(nrow(d) == 0){
       return(NULL)
@@ -926,7 +1072,7 @@ observeEvent(input$validate.go , {
 
 
   
-  manThreshold <- NULL
+  
 
   observe({
     
@@ -975,16 +1121,27 @@ observeEvent(input$validate.go , {
       
     }
     
+    if(!is.null(data$model[["plotfun_Env"]])){
+      
+      plotfun_Env <<- data$model$plotfun_Env
+      
+      if(length(grep("^plot_" , ls(envir = plotfun_Env))) == 1){
+        
+        plotfun <<- plotfun_Env[[ (grep("^plot_" , ls(envir = plotfun_Env) , value = T))]]
+      }
+      
+    }
+    
   })
   
   
   observeEvent(input$predict.specifyThreshold, {
-    #Does not work for some reasons not sure why
+    #TODO: Does not work for some reasons not sure why
     
     if (!input$predict.specifyThreshold){
-      shinyjs::hideElement(id = "predict.manualThreshold",animType = "fade")
+      shinyjs::hide(id = "predict.manualThreshold",animType = "fade")
     }else{
-      shinyjs::showElement(id = "predict.manualThreshold", animType = "fade")
+      shinyjs::show(id = "predict.manualThreshold", animType = "fade")
     }
   })
   
@@ -1008,15 +1165,16 @@ observeEvent(input$validate.go , {
       
       validate(need(class(data$pred) != "try-error" , "No prediction possible, please check if the features are similar to the training data"))
       isolate({
+        namesToExtract <- grep("prob.FALSE" , names(data$pred$data) , invert = T)
         
-        d <- data$pred$data[,c("prob.TRUE" , "response")]
+        d <- data$pred$data[,namesToExtract]
         
+       
+        colnames(d) <- gsub("prob.TRUE" , "probability" , colnames(d))
+        colnames(d) <- gsub("response" , data$pred$task.desc$target , colnames(d))
         
-        colnames(d) <- c("probability" , data$pred$task.desc$target )
         
         d <- cbind(data$newdata , d)
-        
-        d[,ncol(d)] <- ifelse(d[,ncol(d)] == "TRUE" , data$model$positiveClass , "")
         
         data.prediction.download <<- d
         
@@ -1078,17 +1236,18 @@ observeEvent(input$validate.go , {
       validate(need(class(data$pred) != "try-error" , "No prediction possible, please check if the features are similar to the training data"))
       isolate({
         
-        d <- data$pred$data[,c("prob.TRUE" , "response")]
+        namesToExtract <- grep("prob.FALSE" , names(data$pred$data) , invert = T)
+        
+        d <- data$pred$data[,namesToExtract]
         
         
-        colnames(d) <- c("probability" , data$pred$task.desc$target )
-        
+        colnames(d) <- gsub("prob.TRUE" , "probability" , colnames(d))
+        colnames(d) <- gsub("response" , data$pred$task.desc$target , colnames(d))
+      
         d <- cbind(data$newdata , d)
         
-        d[,ncol(d)] <- ifelse(d[,ncol(d)] == "TRUE" , data$model$positiveClass , "")
-        
-        data.prediction.download <<- d
-        
+
+
         return(d)
       })
       
@@ -1111,7 +1270,7 @@ observeEvent(input$validate.go , {
     validate(need(!is.null(plotfun) , "No plot function aviable"),
              need(!is.null(data$model) , "No model selected"))
     
-    searchspace <- data$model$modelpars$train.data[,c(data$model$model$features , data$model$model$task.desc$target)]
+    searchspace <- data$model$data[data$model$data$group == "train",c(data$model$model$features , data$model$model$task.desc$target)]
     
     searchspace <- removeNAs(searchspace)
     
@@ -1311,7 +1470,7 @@ observeEvent(input$validate.go , {
     f <- input$plotScript$datapath
     
     if(!is.null(f)){
-    
+    rm(list = ls(envir = plotfun_Env) ,envir =  plotfun_Env)
     source(f , local = plotfun_Env)
       
      

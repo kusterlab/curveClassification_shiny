@@ -126,6 +126,11 @@ generateModel <- function(classifier , us.rate , features , data , targetVariabl
   #converting character and logicals to factors and integers to numerics
   data <- convertClass( data )
   
+  if(dim(data)[1] == 0){
+    stop("After removal of all rows which contain a NA no observation is left")
+    
+  }
+  
   # generating the task for the model
   task <- makeClassifTask( data = data , target = targetVariable , positive = positiveClass )
   
@@ -179,9 +184,12 @@ combineModel <- function(trainOutput , featureFunctionList , test.data = NULL , 
   }
   
   
-  combinedModel[["modelpars"]] <- trainOutput[c("train.data" , "learner")]
+  combinedModel[["modelpars"]] <- trainOutput["learner"]
   
-  combinedModel[["test.data"]] <- test.data
+  combinedModel[["data"]] <- cbind(test.data , group = rep("test" , times = nrow(test.data)))
+  
+  combinedModel[["data"]] <- rbind(combinedModel[["data"]] , cbind(trainOutput[["train.data"]] , group = rep("train" , times = nrow(trainOutput[["train.data"]]))))
+  
   
   combinedModel[["positiveClass"]] <- positveClass
   
@@ -209,7 +217,7 @@ predict.WrappedCombiModel <- function(combinedModel , newdata , NAtoZero = T){
   
   #nessesary to adjust the factor levels to those used for the training, grep is nessesary to discard the training dataset
   
-  for(n in grep(a$model$task.desc$target , names(a$model$factor.levels) , invert = T , value = T)){
+  for(n in grep(combinedModel$model$task.desc$target , names(combinedModel$model$factor.levels) , invert = T , value = T)){
 
     newdata[,n] <- factor(x = newdata[,n] , levels = combinedModel$model$factor.levels[[n]])
     
@@ -275,25 +283,22 @@ retrain <- function(combinedModel , newdata , estimatingThreshold = F , tprThres
   #for test data the features are not subseted
   ntest <- setdiff(1:nrow(newdata) , ntrain)
   
-
+  newdata[ntrain ,"group"] <- "train"
+  newdata[ntest , "group"] <- "test"
   
   if(keepData){
   
-  combinedModel$test.data <- rbind(combinedModel$test.data , newdata[ntest , names(combinedModel$test.data) ])
+  combinedModel$data <- rbind(combinedModel$data , newdata[ , names(combinedModel$data) ])
   
-  combinedModel$modelpars$train.data <- rbind(combinedModel$modelpars$train.data , newdata[ntrain , names(combinedModel$modelpars$train.data)])
-  
+
   }else{
     
-    combinedModel$test.data <-  newdata[ntest , names(combinedModel$test.data) ]
-    
-    combinedModel$modelpars$train.data <-  newdata[ntrain , names(combinedModel$modelpars$train.data) ]
-    
+    combinedModel$data <-  newdata[ , names(combinedModel$data) ]
     
     
   }
   
-  newdata <- combinedModel$modelpars$train.data[,c(combinedModel$model$features , combinedModel$model$task.desc$target)]
+  newdata <- combinedModel$data[combinedModel$data$group == "train" ,c(combinedModel$model$features , combinedModel$model$task.desc$target)]
   
   newdata <- removeNAs( data = newdata )
   
@@ -312,7 +317,7 @@ retrain <- function(combinedModel , newdata , estimatingThreshold = F , tprThres
     resampResult <- mlr::resample(combinedModel$modelpars$learner , task , resamp , measure = list(tpr , fpr , acc , ppv , auc) , models = T)
     
     # calculating the Threshold based on the prediction of the 10 fold CV
-    combinedModel[["threshold"]] <- getThresholdCV(resampleResult = resampResult , train.data = combinedModel$modelpars$train.data , tprThreshold = tprThreshold)
+    combinedModel[["threshold"]] <- getThresholdCV(resampleResult = resampResult , train.data = combinedModel$data[combinedModel$data$group == "train", ] , tprThreshold = tprThreshold)
     
     
   }
