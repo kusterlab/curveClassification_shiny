@@ -84,8 +84,6 @@ shinyServer(function(input, output , session) {
     }
     
     
-    print(data$data)
-    
   })
   
  
@@ -902,7 +900,15 @@ observeEvent(input$validate.go , {
       br(),
       #TODO: Think about the output as it is implementet now
       checkboxInput("predict.NAs" , label = "Force NA containing observations to probability of 0 ?" , value = T),
+      br(),
+      checkboxInput("predict.specifyThreshold" , label = "set manual threshold" , value = F),
       
+     
+
+        numericInput("predict.manualThreshold" , label = "Chose threshold" , min = 0  , value = 0.5, max = 1 , step = 10^-2),
+
+    
+
       
       if(!is.null(data$newdata) && !is.null(data$model) ){
         list(
@@ -916,7 +922,25 @@ observeEvent(input$validate.go , {
     
   })
   
+
+
+
   
+  manThreshold <- NULL
+
+  observe({
+    
+    if(!is.null(input$predict.specifyThreshold) && input$predict.specifyThreshold){
+      
+      manThreshold <<- input$predict.manualThreshold
+      
+    }else{
+      
+      manThreshold <<- NULL
+    }
+    
+    
+  })
   
   
   observe({ 
@@ -954,14 +978,25 @@ observeEvent(input$validate.go , {
   })
   
   
+  observeEvent(input$predict.specifyThreshold, {
+    #Does not work for some reasons not sure why
+    
+    if (!input$predict.specifyThreshold){
+      shinyjs::hideElement(id = "predict.manualThreshold",animType = "fade")
+    }else{
+      shinyjs::showElement(id = "predict.manualThreshold", animType = "fade")
+    }
+  })
+  
+  
   observeEvent(input$predict.go ,{
     
     
-    data$pred <- try(predict(data$model , newdata = data$newdata , NAtoZero = input$predict.NAs))
+    data$pred <- try(predict(data$model , newdata = data$newdata , NAtoZero = input$predict.NAs ))
     
-    if(class(data$pred)[1] != "try-error"){
+    if(class(data$pred)[1] != "try-error" && input$predict.specifyThreshold){
       
-      #data$pred <- setThreshold(data$pred , ifelse(is.null(input$predict.Threshold) , 0.5 , input$predict.Threshold))
+      data$pred <- setThreshold(data$pred , ifelse(is.null(manThreshold) , 0.5 , manThreshold))
       
     }
     

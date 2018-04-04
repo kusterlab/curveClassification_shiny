@@ -192,7 +192,7 @@ combineModel <- function(trainOutput , featureFunctionList , test.data = NULL , 
   
 }
 
-predict.WrappedCombiModel <- function(combinedModel , newdata , NAtoZero = T , threshold = NULL){
+predict.WrappedCombiModel <- function(combinedModel , newdata , NAtoZero = T){
   
   #checking if all features are calculated or not, if all features are aviable the prediction is done based on the data otherwise the featrues are calculated
   if(! all( combinedModel$model$features %in% colnames(newdata) ) && !is.null(combinedModel[["funList"]])){
@@ -225,14 +225,9 @@ predict.WrappedCombiModel <- function(combinedModel , newdata , NAtoZero = T , t
   
   #if threshold is unequal to NULL the threshold is set to the prediction
   
-  if(!is.null(combinedModel$threshold) && is.null(threshold)){
+  if(! is.null(combinedModel$threshold)){
     
     prediction <- mlr::setThreshold(pred = prediction , threshold = combinedModel$threshold)
-    
-  }else if(!is.null(threshold)){
-    
-    prediction <- mlr::setThreshold(pred = prediction , threshold = threshold)
-    
     
   }
   
