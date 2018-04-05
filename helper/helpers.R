@@ -317,7 +317,7 @@ retrain <- function(combinedModel , newdata , estimatingThreshold = F , tprThres
     resampResult <- mlr::resample(combinedModel$modelpars$learner , task , resamp , measure = list(tpr , fpr , acc , ppv , auc) , models = T)
     
     # calculating the Threshold based on the prediction of the 10 fold CV
-    combinedModel[["threshold"]] <- getThresholdCV(resampleResult = resampResult , train.data = combinedModel$data[combinedModel$data$group == "train", ] , tprThreshold = tprThreshold)
+    combinedModel[["threshold"]] <- getThresholdCV(resampleResult = resampResult , train.data = newdata , tprThreshold = tprThreshold)
     
     
   }
@@ -492,3 +492,17 @@ predictionNames <- function(prediction , class = c("TP" , "TN" , "FP" , "FN")){
   return(name)
   
 }
+
+
+
+summarizeModel <- function(combinedModel){
+  
+  dataSummary <- t(as.data.frame(unlist(getHyperPars(combinedModel$modelpars$learner))))
+  
+  dataSummary <- cbind(dataSummary , 'number of train.data' = combinedModel$model$task.desc$size)
+  
+
+  return(dataSummary)
+  
+}
+
