@@ -19,6 +19,11 @@ shinyUI(
                                        z-index: 105;
                                        }
                                        "),
+                      tags$style(HTML("
+                                      .shiny-output-error-validation {
+                                      color: red;font-weight: bold;
+                                      }
+                                      ")),
                       tags$link(rel = "icon" , href="curve.png"),
                       tags$title("Curve classification tool")
             ),
@@ -72,7 +77,7 @@ shinyUI(
                                     mainPanel(width = 9 , 
                                               wellPanel(
                                                 h4("Messages") , 
-                                                span(textOutput("newModelMessages" ) , style="color:red")
+                                                span(htmlOutput("newModelMessages" ) )
                                               ),
                                               br(),
                                               tabsetPanel(tabPanel("Performance" , 
@@ -116,7 +121,7 @@ shinyUI(
                                 mainPanel(width = 9    , 
                                           wellPanel(
                                             h4("Messages"),
-                                            span(textOutput("optimizeMessages" ) , style="color:red") ),
+                                            htmlOutput("optimizeMessages" )  ),
                                           tabsetPanel(
                                             
                                             
@@ -251,9 +256,19 @@ shinyUI(
                                                       sidebarPanel( width = 3 , 
                                                                     fileInput("plotScript" , label = "Select a plot script")
                                                       ),
-                                                      mainPanel(width = 9 , tableOutput("plotEnv_list") ,br() ,  h4("Testplot") , 
+                                                      mainPanel(width = 9 ,
+                                                                h4("Objects sourced from the script"),
+                                                                DT::dataTableOutput("plotEnv_list") ,br() ,  h4("Testplot") , 
                                                                 plotOutput("testplot"))
-                                             )
+                                             ),
+                                             tabPanel("Model parameters" , 
+                                                      h4("Hyperparameters"),
+                                                      DT::dataTableOutput("Hyperpars"),
+                                                      br(),
+                                                      h4("Used features"),
+                                                      DT::dataTableOutput("Features")
+                                                      
+                                                      )
                                            ))
                        )
                        

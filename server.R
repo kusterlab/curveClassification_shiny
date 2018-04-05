@@ -207,13 +207,13 @@ shinyServer(function(input, output , session) {
       
       if(input$fgf.function.paired){
         
-        validate(need(length(input$fgf.function) == length(patternFun) , message = "If 'functions and patterns paired?' is selected the length of functions needs to be the same as the length of patterns"))
+        validate(need(length(input$fgf.function) == length(patternFun) , message = "If 'functions and patterns paired?' is selected the length of functions needs to be the same as the length of patterns!\n"))
         
         
         
       }else{
         
-        validate(need(length(patternFun) == 1, message = "If 'functions and patterns paired?' is deselected the length of patterns has to be one") )
+        validate(need(length(patternFun) == 1, message = "If 'functions and patterns paired?' is deselected the length of patterns has to be one!\n") )
         
         
         patternFun <- rep(input$fgf.function.Pattern , times = length(input$fgf.function))
@@ -223,13 +223,13 @@ shinyServer(function(input, output , session) {
       
       if(!is.null(input$fgf.function) && is.null(tmp.fgf.List)){
         
-        validate(need({length(grep(paste0(patternFun , collapse = "|") , names(data$data))) > 0}, message = "The specified pattern does not occur in the dataset!"))
+        validate(need({length(grep(paste0(patternFun , collapse = "|") , names(data$data))) > 0}, message = "The specified pattern does not occur in the dataset!\n"))
         
         tmp.fgf.List <<- generateFunctionList(input$fgf.function , patternFun)
         
       }else if(!is.null(input$fgf.function)){
         
-        validate(need({length(grep(paste0(patternFun , collapse = "|") , names(data$data))) > 0}, message = "The specified pattern does not occur in the dataset!"))
+        validate(need({length(grep(paste0(patternFun , collapse = "|") , names(data$data))) > 0}, message = "The specified pattern does not occur in the dataset!\n"))
         
         tmp <- generateFunctionList(input$fgf.function , patternFun)
         
@@ -237,13 +237,13 @@ shinyServer(function(input, output , session) {
       }
       
       
-      validate(need(!is.null(tmp.fgf.List), message = "No feature generation functions selected."),
-               need(!is.null(data$data) , message = "No data set selected."))
+      validate(need(!is.null(tmp.fgf.List), message = "No feature generation functions selected!\n"),
+               need(!is.null(data$data) , message = "No data set selected!\n"))
       
       # length(fgf.List):length(tmp.fgf.List) nessesary to avoid duplications in the column
       d <- try(evaluateFunList(tmp.fgf.List[(length(fgf.List)+1):length(tmp.fgf.List)] , data$data) , silent = T)
       
-      validate(need(class(d) != "try-error" , message = "An error occured during feature calculation no features calculated!"))
+      validate(need(class(d) != "try-error" , message = "An error occured during feature calculation no features calculated!\n"))
       data$newFeatures <<- d
       
       return(NULL)
@@ -286,8 +286,8 @@ shinyServer(function(input, output , session) {
   
   output$fgf.beanplot <- renderPlot({
     
-    validate(need(!is.null(PositiveClass.fgf()) , message = "In order to visualize the features a positive class needs to be selected") , 
-             need(!is.null(TargetColumn.fgf()) , message = "In order to visualize the features a target variable needs to be selected"))#,
+    validate(need(!is.null(PositiveClass.fgf()) , message = "In order to visualize the features a positive class needs to be selected!\n") , 
+             need(!is.null(TargetColumn.fgf()) , message = "In order to visualize the features a target variable needs to be selected!\n"))#,
     #need())
     
     selectedRows <- input$fgf.preview_rows_selected
@@ -366,26 +366,56 @@ shinyServer(function(input, output , session) {
     
   })
   
+  splitDataNewMod <- reactive({
+    
+    
+    if(is.null(input$newModel.splitData)){
+      
+      return(0.8)
+      
+    }else{
+      
+      return(input$newModel.splitData)
+      
+    }
+
+  })
+  
+  tprTuneValueNewMod <- reactive({
+    
+    if(is.null(input$newModel.tprTuneValue)){
+      
+      return(0.995)
+      
+    }else{
+      
+      return(input$newModel.tprTuneValue)
+      
+    }
+    
+    
+  })
+  
   
   output$newModel.ui <- renderUI({
     
     sidebarMenu(
       
-      selectInput("newModel.features" , label = "Exclude features" , choices = colnames(data$data) , multiple = T , selected = isolate(features()) , selectize = T) , 
+      selectInput("newModel.features" , label = "Exclude features" , choices = isolate(colnames(data$data)) , multiple = T , selected = isolate(features()) , selectize = T) , 
       
-      selectInput("newModel.TargetColumn" , label = "Select target" , choices = colnames(data$data) , multiple = F , selected = TargetColumn() , selectize = T),
+      selectInput("newModel.TargetColumn" , label = "Select target" , choices = isolate(colnames(data$data)) , multiple = F , selected = TargetColumn() , selectize = T),
       
-      selectInput("newModel.PositiveClass" , label = "Select positive class" , choices = unique(data$data[,input$newModel.TargetColumn]) , multiple = F , selected = PositiveClass() , selectize = T),
+      selectInput("newModel.PositiveClass" , label = "Select positive class" , choices = isolate(unique(data$data[,input$newModel.TargetColumn])) , multiple = F , selected = PositiveClass() , selectize = T),
       
-      numericInput("newModel.splitData" , label = "Ratio to split data into train and test" , min = 0.05 , max = 1 , step = 0.05 , value = 0.8),
+      numericInput("newModel.splitData" , label = "Ratio to split data into train and test" , min = 0.05 , max = 1 , step = 0.05 , value = isolate(splitDataNewMod())),
       
-      numericInput("newModel.usRate" , label = "Select a undersampling rate" , value =usRate() , min = 10^-4 , max = 1 , step = 10^-4) , 
+      numericInput("newModel.usRate" , label = "Select a undersampling rate" , value = isolate(usRate()) , min = 10^-4 , max = 1 , step = 10^-4) , 
       
-      checkboxInput("newModel.tuneThreshold" , label = "Tune threshold?" , value = tuneThreshold()),
+      checkboxInput("newModel.tuneThreshold" , label = "Tune threshold?" , value = isolate(tuneThreshold())),
       
       if(!is.null(input$newModel.tuneThreshold) && input$newModel.tuneThreshold){
         
-        numericInput("newModel.tprTuneValue" , label = "Tpr tune value" , min = 0 , max = 1 ,value = 0.995 ,  step = 10^-3)
+        numericInput("newModel.tprTuneValue" , label = "Tpr tune value" , min = 0 , max = 1 ,value = isolate(tprTuneValueNewMod()) ,  step = 10^-3)
       },
       
       
@@ -401,7 +431,7 @@ shinyServer(function(input, output , session) {
       
       
     )
-    
+      
     
   })
   
@@ -444,7 +474,7 @@ shinyServer(function(input, output , session) {
         
         if(length(txt)>0){
           
-          return(txt)
+          return(paste("<font color=\"#FF0000\"><b>", txt, "</b></font>"))
         }
         
         if(usRate() != 0){
@@ -469,7 +499,7 @@ shinyServer(function(input, output , session) {
             data$model <- combineModel(trainOutput = data$model , featureFunctionList = fgf.List , test.data = data_test , positveClass = PositiveClass())
             
             
-            return("Model trained successfull!")
+            return(paste("<font color=\"#7CFC00\"><b>", "Model trained sucessfull", "</b></font>"))
           })
           
           
@@ -485,7 +515,7 @@ shinyServer(function(input, output , session) {
   
   output$generateModelData <-  DT::renderDataTable({
     
-    validate(need(!is.null(data$model) , "No model avaiable!"))
+    validate(need(!is.null(data$model) , "No model avaiable!\n"))
     
     isolate({
       pred <- try(predict(data$model , newdata = data$model$data))
@@ -495,7 +525,7 @@ shinyServer(function(input, output , session) {
         pred <- setThreshold(pred , data$model$threshold)
       }
       
-      validate(need(class(pred) != "try-error" , "No prediction possible, please check if the features are similar to the training data"))
+      validate(need(class(pred) != "try-error" , "No prediction possible, please check if the features are similar to the training data!\n"))
       
       namesToExtract <- grep("prob.FALSE" , names(pred$data) , invert = T)
       
@@ -513,7 +543,7 @@ shinyServer(function(input, output , session) {
       return(DT::datatable(data = tmpDataGenerateModel , filter = 'top'))
     })
     
-  }, caption = "Data base of model")
+  }, options = list(scrollX = TRUE), caption = "Data base of model")
   
   
   
@@ -524,7 +554,7 @@ shinyServer(function(input, output , session) {
     
     output$plotsGenerateModels <- renderUI({
       
-      validate(need(!is.null(plotfun) , message = "No plotfunction found"))
+      validate(need(!is.null(plotfun) , message = "No plot function found!\n"))
       
       if(is.null(d) || dim(d)[1] < 1 ){
         
@@ -595,26 +625,26 @@ shinyServer(function(input, output , session) {
       
       fileInput("optimize.model" , "Choose model" , accept = ".RData"),
       
+      wellPanel(
       fileInput("optimize.newdata" , "Choose reannotated data" , accept = ".csv" , multiple = T),
       
       checkboxInput("optimize.header", "Header", TRUE),
       
-      selectInput("optimize.sep", "Separator", selected = ",", choices = c(Comma = ",", Semicolon = ";", Tab = "\t")),
-      
+      selectInput("optimize.sep", "Separator", selected = ",", choices = c(Comma = ",", Semicolon = ";", Tab = "\t"))
+      ),
       
       checkboxInput("optimize.tuneThreshold" , label = "Tune threshold?" , value = tuneThresholdOptimize()),
       
       if(!is.null(input$optimize.tuneThreshold) && input$optimize.tuneThreshold){
         
-        numericInput("optimize.tprTuneValue" , label = "Tpr tune value" , min = 0 , max = 1 ,value = 0.995 ,  step = 10^-3)
+        numericInput("optimize.tprTuneValue" , label = "Tpr tune value" , min = 0 , max = 1 ,value = isolate(tprTuneValueOptimize()) ,  step = 10^-3)
       },
       
       checkboxInput("optimize.keepData" , label = "Keep old training and test data" , value = F),
       
       actionButton("optimize.retrain" , label = "optimize") 
       
-      
-      
+
       
     )
     
@@ -669,6 +699,21 @@ shinyServer(function(input, output , session) {
     
   })
   
+  tprTuneValueOptimize <- reactive({
+    
+    if(is.null(input$optimize.tprTuneValue)){
+      
+      return(0.995)
+      
+    }else{
+      
+      return(input$optimize.tprTuneValue)
+      
+    }
+    
+    
+  })
+  
   
   tuneThresholdOptimize <- reactive({
     
@@ -692,7 +737,7 @@ shinyServer(function(input, output , session) {
       if(is.null(data$evaluated) || is.null(data$model) ){
         
         txt <- "You need to select a model and/or new annotated data.\n"
-        return(txt)
+        return(paste("<font color=\"#FF0000\"><b>", txt, "</b></font>"))
       }
       
        
@@ -702,7 +747,7 @@ shinyServer(function(input, output , session) {
         
         data$modelretrained <- retrain(combinedModel = data$model , newdata = d , estimatingThreshold = tuneThresholdOptimize() , tprThreshold = input$optimize.tprTuneValue , keepData = input$optimize.keepData)
 
-        return("Model retrained successfull")
+       return(paste("<font color=\"#7CFC00\"><b>", "Model retrained sucessfull", "</b></font>"))
       })
       
       
@@ -783,7 +828,7 @@ shinyServer(function(input, output , session) {
   
   output$optimizeNewdata <-  DT::renderDataTable({
     
-    validate(need(!is.null(data$modelretrained) , "No retrained model avaiable!"))
+    validate(need(!is.null(data$modelretrained) , "No retrained model avaiable!\n"))
     
     isolate({
     pred <- try(predict(data$modelretrained , newdata = data$modelretrained$data))
@@ -793,7 +838,7 @@ shinyServer(function(input, output , session) {
       pred <- setThreshold(pred , data$modelretrained$threshold)
     }
     
-    validate(need(class(pred) != "try-error" , "No prediction possible, please check if the features are similar to the training data"))
+    validate(need(class(pred) != "try-error" , "No prediction possible, please check if the features are similar to the training data!\n"))
     
       namesToExtract <- grep("prob.FALSE" , names(pred$data) , invert = T)
       
@@ -813,7 +858,7 @@ shinyServer(function(input, output , session) {
     
     
     
-    }, caption = "Data base of model")
+    },options = list(scrollX = TRUE), caption = "Data base of model")
   
   
   observe({
@@ -824,7 +869,7 @@ shinyServer(function(input, output , session) {
     
     output$plotsOptimizeModel <- renderUI({
       
-      validate(need(!is.null(plotfun) , message = "No plotfunction found"))
+      validate(need(!is.null(plotfun) , message = "No plotfunction found!\n"))
       
       if(is.null(d) || dim(d)[1] < 1 ){
         
@@ -923,8 +968,8 @@ observeEvent(input$validate.go , {
       tmpModel <- NULL
     }
     
-    validate(need(!is.null(tmpModel) , "The selected model is not available"),
-             need(!is.null(plotfun) , "No plot function available"))
+    validate(need(!is.null(tmpModel) , "The selected model is not available!\n"),
+             need(!is.null(plotfun) , "No plot function available!\n"))
     
     
     if(input$validate.allData){
@@ -984,8 +1029,8 @@ observeEvent(input$validate.go , {
       tmpModel <- NULL
     }
     
-    validate(need(!is.null(tmpModel) , "The selected model is not available"),
-             need(!is.null(plotfun) , "No plot function available"))
+    validate(need(!is.null(tmpModel) , "The selected model is not available!\n"),
+             need(!is.null(plotfun) , "No plot function available!\n"))
     
     
     if(input$validate.allData){
@@ -1035,30 +1080,25 @@ observeEvent(input$validate.go , {
     
     sidebarMenu(
       
+      fileInput("predict.model" , "Choose model" , accept = ".RData"),
+      wellPanel(
       fileInput("predict.csv", "Choose CSV File",
                 accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv") , multiple = T),
       
-      fileInput("predict.model" , "Choose model" , accept = ".RData"),
-      
       checkboxInput("predict.header", "Header", TRUE),
       
-      selectInput("predict.sep", "Separator", selected = ",", choices = c(Comma = ",", Semicolon = ";", Tab = "\t")),
+      selectInput("predict.sep", "Separator", selected = ",", choices = c(Comma = ",", Semicolon = ";", Tab = "\t"))
+      ),
       br(),
       #TODO: Think about the output as it is implementet now
-      checkboxInput("predict.NAs" , label = "Force NA containing observations to probability of 0 ?" , value = T),
+      checkboxInput("predict.NAs" , label = "Force NA containing observations to probability of 0?" , value = T),
       br(),
       checkboxInput("predict.specifyThreshold" , label = "set manual threshold" , value = F),
       
-     
-
-        numericInput("predict.manualThreshold" , label = "Chose threshold" , min = 0  , value = 0.5, max = 1 , step = 10^-2),
-
+      numericInput("predict.manualThreshold" , label = "Chose threshold" , min = 0  , value = 0.5, max = 1 , step = 10^-2),
     
-
-      
       if(!is.null(data$newdata) && !is.null(data$model) ){
         list(
-          #numericInput("predict.Threshold" , label = "set Threshold" , min = 0 , max = 1 , step = 10^-2 , value =  round(data$model$threshold , digits = 2) ),
           actionButton("predict.go" , "predict"),
           downloadButton("predict.Download" , label = "Download .csv")
         )
@@ -1163,7 +1203,7 @@ observeEvent(input$validate.go , {
     
     output$predictionData <- DT::renderDataTable({
       
-      validate(need(class(data$pred) != "try-error" , "No prediction possible, please check if the features are similar to the training data"))
+      validate(need(class(data$pred) != "try-error" , "No prediction possible, please check if the features are similar to the training data!\n"))
       isolate({
         namesToExtract <- grep("prob.FALSE" , names(data$pred$data) , invert = T)
         
@@ -1178,10 +1218,10 @@ observeEvent(input$validate.go , {
         
         data.prediction.download <<- d
         
-        return(d)
+        return(DT::datatable(data = d , filter = 'top'))
       })
       
-    })
+    } ,options = list(scrollX = TRUE))
     
     
   })
@@ -1197,7 +1237,7 @@ observeEvent(input$validate.go , {
     
     output$plotsPrediction <- renderUI({
       
-      validate(need(!is.null(plotfun) , message = "No plotfunction found"))
+      validate(need(!is.null(plotfun) , message = "No plot function found!\n"))
       
         if(is.null(d) || dim(d)[1] < 1 ){
           
@@ -1233,7 +1273,7 @@ observeEvent(input$validate.go , {
     
     output$predictionDataNN <- DT::renderDataTable({
       
-      validate(need(class(data$pred) != "try-error" , "No prediction possible, please check if the features are similar to the training data"))
+      validate(need(class(data$pred) != "try-error" , "No prediction possible, please check if the features are similar to the training data!\n"))
       isolate({
         
         namesToExtract <- grep("prob.FALSE" , names(data$pred$data) , invert = T)
@@ -1248,10 +1288,10 @@ observeEvent(input$validate.go , {
         
 
 
-        return(d)
+        return(DT::datatable(data = d , filter = 'top'))
       })
       
-    } ,selection = 'single')
+    }, options = list(scrollX = TRUE) ,selection = 'single')
     
     
   })
@@ -1264,13 +1304,12 @@ observeEvent(input$validate.go , {
       newData <- data.prediction.download[input$predictionDataNN_rows_selected , ]
     }
     
-   
+
     
+    validate(need(!is.null(plotfun) , "No plot function avaiable!\n"),
+             need(!is.null(data$model) , "No model selected!\n"))
     
-    validate(need(!is.null(plotfun) , "No plot function aviable"),
-             need(!is.null(data$model) , "No model selected"))
-    
-    searchspace <- data$model$data[data$model$data$group == "train",c(data$model$model$features , data$model$model$task.desc$target)]
+    searchspace <- data$model$data[ , c(data$model$model$features , data$model$model$task.desc$target)]
     
     searchspace <- removeNAs(searchspace)
     
@@ -1482,26 +1521,44 @@ observeEvent(input$validate.go , {
     }
     
     
-    output$plotEnv_list<-  renderTable({
+    output$plotEnv_list<-  DT::renderDataTable({
       
-      validate(need(length(plotfun_Env)>0 , message = "No Elements in the Enviroment"),
-               need(length(grep("^plot_" , ls(envir = plotfun_Env))) == 1  , "One function with the name plot_ have to be provided"))
+      validate(need(length(plotfun_Env)>0 , message = "No Elements in the Enviroment!\n"),
+               need(length(grep("^plot_" , ls(envir = plotfun_Env))) == 1  , "One function with the name plot_ have to be provided!\n"))
       
-      ls(envir = plotfun_Env)} , colnames = F)
+      DT::datatable(t(ls(envir = plotfun_Env)) , options = list(paging = FALSE, searching = FALSE,
+                                                                bInfo = FALSE, ordering = FALSE, rownames= FALSE ))
   })
   
   output$testplot <- renderPlot({
     
-    validate(need(!is.null(data$data) , message = "No data avaiable!"),
-             need(!is.null(plotfun) , message = "No plot function avaiable!"))
+    validate(need(!is.null(data$data) , message = "No data avaiable!\n"),
+             need(!is.null(plotfun) , message = "No plot function avaiable!\n"))
       
       plotfun(data$data[1,])
       
    
-    
+  })
     
   })
   
+  ### model parameters ###
+  
+  output$Hyperpars <- DT::renderDataTable({
+    
+    validate(need(!is.null(data$model) , "No model loaded"))
+    
+    DT::datatable(summarizeModel(data$model) , options = list(paging = FALSE, searching = FALSE,
+                                                          bInfo = FALSE, ordering = FALSE, rownames= FALSE ))
+  } )
+  
+  output$Features <- DT::renderDataTable({
+    
+    validate(need(!is.null(data$model) , "No model loaded"))
+    
+    DT::datatable(t(as.data.frame(data$model$model$features)) , options = list(paging = FALSE, searching = FALSE,
+                                                             bInfo = FALSE, ordering = FALSE , colnames = FALSE , rownames= FALSE))
+  } , rownames= FALSE)
   
   
 })
