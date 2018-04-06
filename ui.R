@@ -265,10 +265,10 @@ shinyUI(
                                                                 plotOutput("testplot"))
                                              ),
                                              tabPanel("Model parameters" ,
-                                                      h4("Hyperparameters"),
+                                                      h3("Hyperparameters"),
                                                       DT::dataTableOutput("Hyperpars"),
                                                       br(),
-                                                      h4("Used features"),
+                                                      h3("Used features"),
                                                       DT::dataTableOutput("Features")
 
                                                       )

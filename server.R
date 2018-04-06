@@ -1,5 +1,5 @@
 
-#require(shinyjs)
+require(shinyjs)
 require(shiny)
 require(shinydashboard)
 require(plotly)
@@ -7,10 +7,10 @@ require(BBmisc)
 require(ggplot2)
 require(mlr)
 require(GGally)
-#require(beanplot)
-#require(data.table)
+require(beanplot)
+require(data.table)
 require(RANN)
-#require(DT)
+require(DT)
 
         
       
@@ -292,8 +292,8 @@ shinyServer(function(input, output , session) {
       #nessesary to return the dataframe
       d
     }
-  }, options = list(scrollX = TRUE),
-  caption = "You generated the following new dataset" , selection = 'single')
+  }, options = list(scrollX = TRUE, selection = 'single'),
+  caption = "You generated the following new dataset" )
 
   output$fgf.beanplot <- renderPlot({
 
@@ -392,20 +392,6 @@ shinyServer(function(input, output , session) {
 
   })
 
-  tprTuneValueNewMod <- reactive({
-
-    if(is.null(input$newModel.tprTuneValue)){
-
-      return(0.995)
-
-    }else{
-
-      return(input$newModel.tprTuneValue)
-
-    }
-
-
-  })
 
 
   output$newModel.ui <- renderUI({
@@ -418,33 +404,40 @@ shinyServer(function(input, output , session) {
 
       selectInput("newModel.PositiveClass" , label = "Select positive class" , choices = isolate(unique(data$data[,input$newModel.TargetColumn])) , multiple = F , selected = PositiveClass() , selectize = T),
 
-      numericInput("newModel.splitData" , label = "Ratio to split data into train and test" , min = 0.05 , max = 1 , step = 0.05 , value = isolate(splitDataNewMod())),
+      numericInput("newModel.splitData" , label = "Ratio to split data into train and test" , min = 0.05 , max = 0.999 , step = 0.05 , value = isolate(splitDataNewMod())),
 
       numericInput("newModel.usRate" , label = "Select a undersampling rate" , value = isolate(usRate()) , min = 10^-4 , max = 1 , step = 10^-4) ,
 
-      checkboxInput("newModel.tuneThreshold" , label = "Tune threshold?" , value = isolate(tuneThreshold())),
-
-      if(!is.null(input$newModel.tuneThreshold) && input$newModel.tuneThreshold){
-
-        numericInput("newModel.tprTuneValue" , label = "Tpr tune value" , min = 0 , max = 1 ,value = isolate(tprTuneValueNewMod()) ,  step = 10^-3)
-      },
-
-
+      checkboxInput("newModel.tuneThreshold" , label = "Tune threshold?" , value = F),
+      shinyjs::hidden(sliderInput("newModel.tprTuneValue" , label = "Tpr tune value" , min = 0 , max = 0.999 ,value = 0.995 ,  step = 10^-3 , width = "95%")),
+     
       actionButton("newModel.train" , label = "train"),
 
-      if(!is.null(data$model)){
-
-        downloadButton("saveModel" , "Download model")
-
-      }
-
-
-
-
+      
+      downloadButton("saveModel" , "Download model")
+       
     )
 
 
   })
+
+  
+  observe({
+    if(!is.null(input$newModel.tuneThreshold) && input$newModel.tuneThreshold){
+      
+      shinyjs::show("newModel.tprTuneValue" , animType = "fade")
+      
+    }else{
+      
+      shinyjs::hide("newModel.tprTuneValue" , animType = "fade")
+      
+      
+    }
+    
+    
+  })
+  
+  
 
   output$saveModel <- downloadHandler(filename = function(){"model.RData"} , content = function(file){
 
@@ -463,7 +456,7 @@ shinyServer(function(input, output , session) {
 
         txt <- NULL
 
-        if(is.null(usRate()) || usRate() == 0){
+        if(is.null(input$newModel.usRate) || input$newModel.usRate == 0){
 
           txt <- c(txt , "The selected positive class does not contain a single observations.\n")
 
@@ -488,7 +481,7 @@ shinyServer(function(input, output , session) {
           return(paste("<font color=\"#FF0000\"><b>", txt, "</b></font>"))
         }
 
-        if(usRate() != 0){
+        if(input$newModel.usRate != 0){
 
           isolate({
             n <- sample(1:dim(data$data)[1] , input$newModel.splitData*dim(data$data)[1])
@@ -504,7 +497,7 @@ shinyServer(function(input, output , session) {
 
             usedFeatures <- grep(paste0(paste0("^" , c(features() , TargetColumn()), "$") , collapse = "|") , names(d) , invert = T , value = T)
 
-            data$model <- generateModel(classifier = "classif.randomForest" , us.rate = usRate() , features = usedFeatures , data = data_train , targetVariable = TargetColumn() , positiveClass = "TRUE" , estimatingThreshold = tuneThreshold() , tprThreshold = input$newModel.tprTuneValue )
+            data$model <- generateModel(classifier = "classif.randomForest" , us.rate = input$newModel.usRate , features = usedFeatures , data = data_train , targetVariable = TargetColumn() , positiveClass = "TRUE" , estimatingThreshold = tuneThreshold() , tprThreshold = input$newModel.tprTuneValue )
 
 
             data$model <- combineModel(trainOutput = data$model , featureFunctionList = fgf.List , test.data = data_test , positveClass = PositiveClass())
@@ -551,10 +544,10 @@ shinyServer(function(input, output , session) {
 
 
 
-      return(DT::datatable(data = tmpDataGenerateModel , filter = 'top'))
+      return(DT::datatable(data = tmpDataGenerateModel , filter = 'top' , options = list(scrollX = TRUE)))
     })
 
-  }, options = list(scrollX = TRUE), caption = "Data base of model")
+  }, caption = "Data base of model")
 
 
 
@@ -644,17 +637,13 @@ shinyServer(function(input, output , session) {
       selectInput("optimize.sep", "Separator", selected = ",", choices = c(Comma = ",", Semicolon = ";", Tab = "\t"))
       ),
 
-      checkboxInput("optimize.tuneThreshold" , label = "Tune threshold?" , value = tuneThresholdOptimize()),
+      checkboxInput("optimize.tuneThreshold" , label = "Tune threshold?" , value = F),
 
-      if(!is.null(input$optimize.tuneThreshold) && input$optimize.tuneThreshold){
-
-        numericInput("optimize.tprTuneValue" , label = "Tpr tune value" , min = 0 , max = 1 ,value = isolate(tprTuneValueOptimize()) ,  step = 10^-3)
-      },
+      shinyjs::hidden(sliderInput("optimize.tprTuneValue" , label = "Tpr tune value" , min = 0 , max = 0.999 ,value = 0.995 ,  step = 10^-3 , width = "95%")),
 
       checkboxInput("optimize.keepData" , label = "Keep old training and test data" , value = F),
 
       actionButton("optimize.retrain" , label = "optimize")
-
 
 
     )
@@ -662,7 +651,50 @@ shinyServer(function(input, output , session) {
 
 
   })
-
+  
+  observe({
+    
+    if(!is.null(input$optimize.tuneThreshold) && input$optimize.tuneThreshold){
+      
+      shinyjs::show("optimize.tprTuneValue" , animType = "fade")
+      
+    }else{
+      
+      shinyjs::hide("optimize.tprTuneValue" , animType = "fade")
+      
+    }
+    
+    
+  })
+  
+  
+  output$optimizeExchangeButton <- renderUI({
+    
+    if(!is.null(data$modelretrained)){
+      sidebarMenu(
+        actionButton("optimizeExchangeButton" , label = "Use new model"),
+        
+        downloadButton("optimizeSaveModel" , label = "Download model")
+      )
+    }else{
+      NULL
+    }
+    
+    
+  })
+  
+  observeEvent(input$optimizeExchangeButton , {
+    
+    data$model <- data$modelretrained
+    
+    data$modelretrained <- NULL
+    
+    data$evaluated <- NULL
+    
+    
+    
+    
+  })
 
   observe({
 
@@ -707,21 +739,6 @@ shinyServer(function(input, output , session) {
       }
 
     }
-
-  })
-
-  tprTuneValueOptimize <- reactive({
-
-    if(is.null(input$optimize.tprTuneValue)){
-
-      return(0.995)
-
-    }else{
-
-      return(input$optimize.tprTuneValue)
-
-    }
-
 
   })
 
@@ -864,12 +881,12 @@ shinyServer(function(input, output , session) {
 
 
 
-      return(DT::datatable(data = tmpDataOptimizeModel  , filter = 'top'))
+      return(DT::datatable(data = tmpDataOptimizeModel  , filter = 'top',options = list(scrollX = TRUE)))
     })
 
 
 
-    },options = list(scrollX = TRUE), caption = "Data base of model")
+    }, caption = "Data base of model")
 
 
   observe({
@@ -904,33 +921,6 @@ shinyServer(function(input, output , session) {
 
   })
 
-  output$optimizeExchangeButton <- renderUI({
-
-    if(!is.null(data$modelretrained)){
-      sidebarMenu(
-        actionButton("optimizeExchangeButton" , label = "Use new model"),
-
-        downloadButton("optimizeSaveModel" , label = "Download model")
-      )
-    }else{
-      NULL
-    }
-
-
-  })
-
-  observeEvent(input$optimizeExchangeButton , {
-
-    data$model <- data$modelretrained
-
-    data$modelretrained <- NULL
-
-    data$evaluated <- NULL
-
-
-
-
-  })
 
   output$optimizeSaveModel<- downloadHandler(filename = function(){"reevaluatedModel.RData"} , content = function(file){
 
@@ -1103,20 +1093,31 @@ observeEvent(input$validate.go , {
       br(),
       #TODO: Think about the output as it is implementet now
       checkboxInput("predict.NAs" , label = "Force NA containing observations to probability of 0?" , value = T),
-      br(),
       checkboxInput("predict.specifyThreshold" , label = "set manual threshold" , value = F),
 
       numericInput("predict.manualThreshold" , label = "Chose threshold" , min = 0  , value = 0.5, max = 1 , step = 10^-2),
 
-      if(!is.null(data$newdata) && !is.null(data$model) ){
-        list(
-          actionButton("predict.go" , "predict"),
-          downloadButton("predict.Download" , label = "Download .csv")
-        )
-      }
-
+      shinyjs::disabled(actionButton("predict.go" , "predict")),
+      
+      shinyjs::disabled(downloadButton("predict.Download" , label = "Download .csv"))
+        
     )
 
+  })
+
+  observe({
+    
+    if(!is.null(data$newdata) && !is.null(data$model)){
+      shinyjs::enable( id = "predict.go" )
+      shinyjs::enable( id = "predict.Download")
+    }else{
+      
+      shinyjs::disable( id = "predict.go")
+      shinyjs::disable( id = "predict.Download")
+      
+    }
+    
+    
   })
 
 
@@ -1229,10 +1230,10 @@ observeEvent(input$validate.go , {
 
         data.prediction.download <<- d
 
-        return(DT::datatable(data = d , filter = 'top'))
+        return(DT::datatable(data = d , filter = 'top',options = list(scrollX = TRUE)))
       })
 
-    } ,options = list(scrollX = TRUE))
+    } )
 
 
   })
@@ -1299,10 +1300,10 @@ observeEvent(input$validate.go , {
 
 
 
-        return(DT::datatable(data = d , filter = 'top'))
+        return(DT::datatable(data = d , filter = 'top', options = list(scrollX = TRUE) ,selection = 'single'))
       })
 
-    }, options = list(scrollX = TRUE) ,selection = 'single')
+    })
 
 
   })
@@ -1318,7 +1319,8 @@ observeEvent(input$validate.go , {
 
 
     validate(need(!is.null(plotfun) , "No plot function avaiable!\n"),
-             need(!is.null(data$model) , "No model selected!\n"))
+             need(!is.null(data$model) , "No model selected!\n"),
+             need(nrow(newData) > 0 , "No observation selected!"))
 
     searchspace <- data$model$data[ , c(data$model$model$features , data$model$model$task.desc$target)]
 
@@ -1560,16 +1562,18 @@ observeEvent(input$validate.go , {
   output$Hyperpars <- DT::renderDataTable({
 
     validate(need(!is.null(data$model) , "No model loaded"))
-
-    DT::datatable(summarizeModel(data$model) , options = list(paging = FALSE, searching = FALSE,
+    d <- summarizeModel(data$model) 
+    rownames(d)<- NULL
+    DT::datatable(d , options = list(paging = FALSE, searching = FALSE,
                                                           bInfo = FALSE, ordering = FALSE , rownames = FALSE ))
   } )
 
   output$Features <- DT::renderDataTable({
 
     validate(need(!is.null(data$model) , "No model loaded"))
-
-    DT::datatable(t(as.data.frame(data$model$model$features)) , options = list(paging = FALSE, searching = FALSE,
+    d <- t(as.data.frame(data$model$model$features))
+    rownames(d)<- NULL
+    DT::datatable(d , options = list(paging = FALSE, searching = FALSE,
                                                              bInfo = FALSE, ordering = FALSE , colnames = FALSE ))
   } , rownames= FALSE)
 
