@@ -54,184 +54,184 @@ shinyUI(
                                     ),
                                     mainPanel(width = 9,
                                               wellPanel(
-                                                h4("Messages") , 
+                                                h4("Messages") ,
                                                 span(textOutput("fgf.messages") , style="color:red")),
                                               box(width = 12, DT::dataTableOutput("fgf.preview")
                                               ),br(),
-                                              
+
                                               plotOutput("fgf.beanplot" , height = 700 )
-                                              
-                                              
+
+
                                     )
-                                    
+
                                   )
                                 )
-                                
-                       ) ,            
+
+                       ) ,
                        tabPanel('Generate new model'  , icon = icon(name = "fa-calculator" ,class = "fa fa-calculator" , lib = "font-awesome"),
                                 fluidPage(
                                   sidebarLayout(
                                     sidebarPanel(width = 3,
                                                  uiOutput("newModel.ui")
                                     ),
-                                    mainPanel(width = 9 , 
+                                    mainPanel(width = 9 ,
                                               wellPanel(
-                                                h4("Messages") , 
+                                                h4("Messages") ,
                                                 span(htmlOutput("newModelMessages" ) )
                                               ),
                                               br(),
-                                              tabsetPanel(tabPanel("Performance" , 
+                                              tabsetPanel(tabPanel("Performance" ,
                                                                    h4("Confusion matrix"),
-                                                                   
-                                                                   tableOutput("ConfusionMatrix"), br(), 
-                                                                   
-                                                                   
+
+                                                                   tableOutput("ConfusionMatrix"), br(),
+
+
                                                                    box(plotOutput("performanceVsThreshold"),
                                                                        br(),
-                                                                       
-                                                                       h4("Probability distribution"), 
-                                                                       plotOutput("probabilityDistribution"))             
+
+                                                                       h4("Probability distribution"),
+                                                                       plotOutput("probabilityDistribution"))
                                                                    ),
-                                                          tabPanel("Data" , 
-                                                                   
+                                                          tabPanel("Data" ,
+
                                                                    DT::dataTableOutput("generateModelData"),
                                                                    uiOutput("plotsGenerateModels")
-                                                                   
+
                                                                    )
-                                                          
-                                                          
-                                                          
-                                                          
+
+
+
+
                                                           )
-                                             
-                                               
-                                              
+
+
+
                                     )
-                                    
+
                                   )
                                 )
-                       )  , 
+                       )  ,
                        tabPanel('Optimize existing model'  , icon = icon(name = "fa-calculator" ,class = "fa fa-calculator" , lib = "font-awesome"),
-                                
-                                
+
+
                                 sidebarPanel(width = 3,
                                              uiOutput("optimize.ui"),
                                              uiOutput("optimizeExchangeButton")
                                 ),
-                                mainPanel(width = 9    , 
+                                mainPanel(width = 9    ,
                                           wellPanel(
                                             h4("Messages"),
                                             htmlOutput("optimizeMessages" )  ),
                                           tabsetPanel(
-                                            
-                                            
-                                            tabPanel("Performance" , 
-                                                     column(width = 4.5 , 
+
+
+                                            tabPanel("Performance" ,
+                                                     column(width = 4.5 ,
                                                             box(
-                                                              
+
                                                               h4("Old model"),
-                                                              
+
                                                               h5("Confusion matrix"),
-                                                              
-                                                              tableOutput("ConfusionMatrix.old"), br(), 
-                                                              
-                                                              
+
+                                                              tableOutput("ConfusionMatrix.old"), br(),
+
+
                                                               box(plotOutput("performanceVsThreshold.old"),
                                                                   br(),
-                                                                  
-                                                                  h5("Probability distribution"), 
+
+                                                                  h5("Probability distribution"),
                                                                   plotOutput("probabilityDistribution.old"))
-                                                               
-                                                              
+
+
                                                             )
-                                                            
-                                                            
+
+
                                                      ),
-                                                     column(width = 4.5 , 
+                                                     column(width = 4.5 ,
                                                             box(
-                                                              
+
                                                               h4("New model"),
-                                                              
+
                                                               h5("Confusion matrix"),
-                                                              
-                                                              tableOutput("ConfusionMatrix.new"), br(), 
-                                                              
-                                                              
+
+                                                              tableOutput("ConfusionMatrix.new"), br(),
+
+
                                                               box(plotOutput("performanceVsThreshold.new"),
                                                                   br(),
-                                                                  
-                                                                  h5("Probability distribution"), 
+
+                                                                  h5("Probability distribution"),
                                                                   plotOutput("probabilityDistribution.new"))
-                                                              
+
                                                             )
-                                                            
-                                                            
+
+
                                                      )
                                             ),
-                                            tabPanel("Data" , 
-                                                     
+                                            tabPanel("Data" ,
+
                                                      DT::dataTableOutput("optimizeNewdata"),
                                                      uiOutput("plotsOptimizeModel")
-                                                     
+
                                             )
                                           )
-                                          
-                                          
-                                )    
-                                
-                                
-                                
-                       )   , 
+
+
+                                )
+
+
+
+                       )   ,
                        tabPanel("Validate Model",
-                                
-                                sidebarPanel(width = 3 , 
-                                             
+
+                                sidebarPanel(width = 3 ,
+
                                              uiOutput("validate.ui")
-                                             
+
                                              ),
                                 mainPanel(width = 9,
                                           tabsetPanel(
-                                            tabPanel("False Positives" , 
+                                            tabPanel("False Positives" ,
                                                      uiOutput("plotsFP")),
-                                            tabPanel("False Negatives" , 
+                                            tabPanel("False Negatives" ,
                                                      uiOutput("plotsFN"))
                                           ))
-                                
-                                
-                                
+
+
+
                                 ),
-                       tabPanel("Predict" , 
-                                
+                       tabPanel("Predict" ,
+
                                 sidebarPanel(width = 3,
                                              uiOutput("predict.ui")
                                 ),
                                 mainPanel(width = 9 ,
                                           tabsetPanel(
-                                            tabPanel("prediction" , 
-                                                     
+                                            tabPanel("prediction" ,
+
                                                      DT::dataTableOutput("predictionData"),
                                                      uiOutput("plotsPrediction")
-                                                     
-                                                     
-                                            ) , 
+
+
+                                            ) ,
                                             tabPanel("Nearest Neighbors",
-                                                     
+
                                                      DT::dataTableOutput("predictionDataNN"),
                                                      h3("Nearest neighbor plots of the selected observation"),
                                                      br(),
-                                                     splitLayout(h4("nearest neighbor: TRUE") , h4("Selected observation") , h4("nearest neighbor: FALSE"), cellWidths = c("33%", "33%" ,"33%" )), 
-                                                     splitLayout(plotOutput("nearestNeighborTRUE")  , plotOutput("nearestNeighborEx")  ,plotOutput("nearestNeighborFALSE") , cellWidths = c("33%", "33%" ,"33%" ))    
-                                                     
-                                                     
+                                                     splitLayout(h4("nearest neighbor: TRUE") , h4("Selected observation") , h4("nearest neighbor: FALSE"), cellWidths = c("33%", "33%" ,"33%" )),
+                                                     splitLayout(plotOutput("nearestNeighborTRUE")  , plotOutput("nearestNeighborEx")  ,plotOutput("nearestNeighborFALSE") , cellWidths = c("33%", "33%" ,"33%" ))
+
+
                                             ))
-                                          
-                                          
+
+
                                 )
                        ),
-                       navbarMenu("More" , 
-                                  tabPanel("Explore data" , 
+                       navbarMenu("More" ,
+                                  tabPanel("Explore data" ,
                                            bootstrapPage(
-                                             
+
                                              uiOutput("data.summary.box"),
                                              box(width = 12, title = "Variable Visualization", id = "summary.vis.box",
                                                  fluidRow(
@@ -242,36 +242,36 @@ shinyUI(
                                                    )
                                                  )
                                              )
-                                             
-                                           ) 
-                                           
-                                           
-                                           
-                                           
+
+                                           )
+
+
+
+
                                   ),
-                                  tabPanel("Others" , 
+                                  tabPanel("Others" ,
                                            tabsetPanel(
-                                             tabPanel("Upload plot function"  , 
-                                                      
-                                                      sidebarPanel( width = 3 , 
+                                             tabPanel("Upload plot function"  ,
+
+                                                      sidebarPanel( width = 3 ,
                                                                     fileInput("plotScript" , label = "Select a plot script")
                                                       ),
                                                       mainPanel(width = 9 ,
                                                                 h4("Objects sourced from the script"),
-                                                                DT::dataTableOutput("plotEnv_list") ,br() ,  h4("Testplot") , 
+                                                                DT::dataTableOutput("plotEnv_list") ,br() ,  h4("Testplot") ,
                                                                 plotOutput("testplot"))
                                              ),
-                                             tabPanel("Model parameters" , 
+                                             tabPanel("Model parameters" ,
                                                       h4("Hyperparameters"),
                                                       DT::dataTableOutput("Hyperpars"),
                                                       br(),
                                                       h4("Used features"),
                                                       DT::dataTableOutput("Features")
-                                                      
+
                                                       )
                                            ))
                        )
-                       
+
                        
                        
                        
