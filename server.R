@@ -1,12 +1,22 @@
-library(shiny)
+
+#require(shinyjs)
+require(shiny)
 require(shinydashboard)
 require(plotly)
 require(BBmisc)
+require(ggplot2)
 require(mlr)
 require(GGally)
-require(beanplot)
-require(data.table)
-library(shinyjs)
+#require(beanplot)
+#require(data.table)
+require(RANN)
+#require(DT)
+
+        
+      
+
+
+
 
 ## Limits the upload size to 1GB
 
@@ -1177,16 +1187,16 @@ observeEvent(input$validate.go , {
 
 
   observeEvent(input$predict.specifyThreshold, {
-    #TODO: Does not work for some reasons not sure why
 
-    if (!input$predict.specifyThreshold){
-      shinyjs::hide(id = "predict.manualThreshold",animType = "fade")
-    }else{
+    if (input$predict.specifyThreshold){
       shinyjs::show(id = "predict.manualThreshold", animType = "fade")
+    }else{
+      shinyjs::hide(id = "predict.manualThreshold",animType = "fade")
     }
   })
 
-
+  
+  
   observeEvent(input$predict.go ,{
 
 
@@ -1422,7 +1432,6 @@ observeEvent(input$validate.go , {
   })
 
   observeEvent(input$summary.vis.dens, {
-    #Does not work for some reasons not sure why
 
     if (input$summary.vis.dens == "Density"){
       shinyjs::hide(id = "summary.vis.hist.nbins",animType = "fade")

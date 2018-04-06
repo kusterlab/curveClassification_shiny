@@ -1,5 +1,6 @@
 
-require(shinydashboard)
+
+
 shinyUI( 
   
   fluidPage(style = pagewidth,
@@ -30,7 +31,7 @@ shinyUI(
             conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                              tags$div("Loading...",id="loadmessage")),
             navbarPage('Curve classification' ,   
-                      
+                      useShinyjs(),
                        tabPanel('Data import' ,value = 1  , icon = icon(name = "fa-database" ,class = "fa fa-database" , lib = "font-awesome") , 
                                 fluidPage(
                                   sidebarLayout(

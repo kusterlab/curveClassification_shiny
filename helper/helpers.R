@@ -380,7 +380,7 @@ beanPlotFeatures <- function(data , target , subsetvariable = NULL , col = c("or
     
     if(length(tmp) == 2){
       par(mar=c(5.1,4.1,4.1,2.1))
-      beanplot(tmp , what = c(1,1,1,0) , ylab = nfeature  , bw = "nrd0" , las = 2 , side = "both" ,  col = list(col[1], c(col[2], "white")) , show.names = F , ylim = c(ylimLower , ylimUpper) )
+      beanplot::beanplot(tmp , what = c(1,1,1,0) , ylab = nfeature  , bw = "nrd0" , las = 2 , side = "both" ,  col = list(col[1], c(col[2], "white")) , show.names = F , ylim = c(ylimLower , ylimUpper) )
       legend("topright" , col = col , legend = names(tmp) , pch = 19  , bty = "n")
       
       
@@ -388,13 +388,13 @@ beanPlotFeatures <- function(data , target , subsetvariable = NULL , col = c("or
     }else if(length(unique(data$target)) == 2){
       par(mar=c(11.1,4.1,4.1,2.1))
       
-      beanplot(tmp , what = c(1,1,1,0) , ylab = nfeature  , bw = "nrd0" , las = 2 , side = "both" ,  col = list(col[1], c(col[2], "white")) , ... , ylim = c(ylimLower , ylimUpper) )
+      beanplot::beanplot(tmp , what = c(1,1,1,0) , ylab = nfeature  , bw = "nrd0" , las = 2 , side = "both" ,  col = list(col[1], c(col[2], "white")) , ... , ylim = c(ylimLower , ylimUpper) )
       legend("topright" , col = col , legend = unique(data$target) , pch = 19  , bty = "n")
       par(mar=c(5.1,4.1,4.1,2.1))
       
     }else{
       
-      beanplot(tmp , what = c(1,1,1,0) , ylab = nfeature  , bw = "nrd0" , las = 2 , ...  , ylim = c(ylimLower , ylimUpper))
+      beanplot::beanplot(tmp , what = c(1,1,1,0) , ylab = nfeature  , bw = "nrd0" , las = 2 , ...  , ylim = c(ylimLower , ylimUpper))
       
       
       
@@ -407,8 +407,8 @@ beanPlotFeatures <- function(data , target , subsetvariable = NULL , col = c("or
   
 }
 
-require(BBmisc)
-require(RANN)
+
+
 #it was added all with prob.TRUE on 27.2
 
 nearestNeighbors <- function(uniqueIdentifier , searchspace , newData , nNeighbor = 1000  , targetColumn = "Target" )
@@ -438,7 +438,7 @@ nearestNeighbors <- function(uniqueIdentifier , searchspace , newData , nNeighbo
   searchspace <- cbind(searchspace , Targets = targets)
   
   
-  nearestNeighbor <- nn2(data = searchdf[,grep(targetColumn , names(searchdf) , invert = T)] , query = searchdf[-c(1:lengthSearchspace) , grep(targetColumn , names(searchdf) , invert = T)] , k = nNeighbor)
+  nearestNeighbor <- RANN::nn2(data = searchdf[,grep(targetColumn , names(searchdf) , invert = T)] , query = searchdf[-c(1:lengthSearchspace) , grep(targetColumn , names(searchdf) , invert = T)] , k = nNeighbor)
   
   neighborsdata <- apply(nearestNeighbor[["nn.idx"]] , 1 , function(x , searchspace){
     
