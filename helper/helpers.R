@@ -432,7 +432,7 @@ nearestNeighbors <- function(uniqueIdentifier , searchspace , newData , nNeighbo
   
   targets <- searchspace[ , targetColumn]
   
-  searchdf <- normalize(x = searchspace[,grep(targetColumn , names(searchspace) , invert = T)] , method = "standardize" )
+  searchdf <- BBmisc::normalize(x = searchspace[,grep(targetColumn , names(searchspace) , invert = T)] , method = "standardize" )
   
   
   searchspace <- cbind(searchspace , Targets = targets)

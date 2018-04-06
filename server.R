@@ -56,9 +56,8 @@ shinyServer(function(input, output , session) {
   
   manThreshold <- NULL
   
-  tmpDataGenerateModel <- NULL
-  
-  tmpDataOptimizeModel <- NULL
+  tmpData <- reactiveValues(GenerateModel = NULL , OptimizeModel = NULL)
+
   
   
   output$import.ui <- renderUI({
@@ -517,8 +516,9 @@ shinyServer(function(input, output , session) {
 
   })
 
-  output$generateModelData <-  DT::renderDataTable({
-
+ 
+observe({
+  
     validate(need(!is.null(data$model) , "No model avaiable!\n"))
 
     isolate({
@@ -539,21 +539,35 @@ shinyServer(function(input, output , session) {
       colnames(d) <- gsub("prob.TRUE" , "probability" , colnames(d))
       colnames(d) <- gsub("response" , pred$task.desc$target , colnames(d))
 
+      #removal of stored Target column nessesary to avoid to columns with the same name
+      
+      tmpData$GenerateModel <<- cbind(d , data$model$data[,grep(paste0("^" ,pred$task.desc$target,"$" ) , names(data$model$data) , invert = T) ] )
+    
+      })
 
-      tmpDataGenerateModel <<- cbind(data$model$data , d)
+    })   
+    
 
+output$generateModelData <-  DT::renderDataTable({
 
+      return(DT::datatable(data = tmpData$GenerateModel , filter = 'top' , options = list(scrollX = TRUE)))
 
-      return(DT::datatable(data = tmpDataGenerateModel , filter = 'top' , options = list(scrollX = TRUE)))
-    })
 
   }, caption = "Data base of model")
 
 
+output$NNgenerateModelData <-  DT::renderDataTable({
+  
+  return(DT::datatable(data = tmpData$GenerateModel , filter = 'top' , options = list(scrollX = TRUE ), selection = 'single'))
 
-  observe({
 
-    d <- tmpDataGenerateModel[input$generateModelData_rows_selected , ]
+}, caption = "Select an observation to find it's nearest neighbors")
+
+
+
+observe({
+
+    d <- tmpData$GenerateModel[input$generateModelData_rows_selected , ]
 
 
     output$plotsGenerateModels <- renderUI({
@@ -583,7 +597,58 @@ shinyServer(function(input, output , session) {
     })
 
   })
+ 
+  
+  observe({
 
+    newData <- tmpData$GenerateModel[input$NNgenerateModelData_rows_selected , ]
+    
+    
+    validate(need(!is.null(plotfun) , "No plot function avaiable!\n"),
+             need(!is.null(tmpData$GenerateModel) , "No model selected!\n"),
+             need(!is.null(input$NNgenerateModelData_rows_selected) , "No row selected!\n")
+            )
+    
+    searchspace <- data$model$data[-input$NNgenerateModelData_rows_selected , c(data$model$model$features , data$model$model$task.desc$target)]
+    
+    searchspace <- removeNAs(searchspace)
+    
+    neighbours <- try(nearestNeighbors(uniqueIdentifier = NULL , searchspace = searchspace , newData = newData , targetColumn = data$model$model$task.desc$target))
+    
+    output$nearestNeighborTRUEGenNewMod <- renderPlot({
+      
+      
+      if(class(neighbours) == "try-error"){
+        return(NULL)
+      }
+      plotfun(neighbours[[1]][1,])
+      
+    })
+    output$nearestNeighborExGenNewMod <- renderPlot({
+      
+      if(class(neighbours) == "try-error"){
+        return(NULL)
+      }
+      
+      plotfun(neighbours[[1]][2,])
+      
+      
+      
+    })
+    
+    output$nearestNeighborFALSEGenNewMod <- renderPlot({
+      
+      if(class(neighbours) == "try-error"){
+        return(NULL)
+      }
+      
+      plotfun(neighbours[[1]][3,])
+      
+      
+      
+    })
+    
+  })
 
 
   observeEvent( data$model, {
@@ -854,8 +919,9 @@ shinyServer(function(input, output , session) {
 
 
 
-  output$optimizeNewdata <-  DT::renderDataTable({
-
+ 
+observe({
+  
     validate(need(!is.null(data$modelretrained) , "No retrained model avaiable!\n"))
 
     isolate({
@@ -876,22 +942,23 @@ shinyServer(function(input, output , session) {
       colnames(d) <- gsub("prob.TRUE" , "probability" , colnames(d))
       colnames(d) <- gsub("response" , pred$task.desc$target , colnames(d))
 
-
-      tmpDataOptimizeModel <<- cbind(data$modelretrained$data , d)
-
-
-
-      return(DT::datatable(data = tmpDataOptimizeModel  , filter = 'top',options = list(scrollX = TRUE)))
+      #removal of stored Target column nessesary to avoid to columns with the same name
+      tmpData$OptimizeModel <<- cbind( d , data$modelretrained$data[,grep(paste0("^" ,pred$task.desc$target,"$" ) , names(data$modelretrained$data) , invert = T) ])
+      
     })
+    
+})
+    
+output$optimizeNewdata <-  DT::renderDataTable({
 
-
+      return(DT::datatable(data = tmpData$OptimizeModel  , filter = 'top',options = list(scrollX = TRUE)))
 
     }, caption = "Data base of model")
 
 
   observe({
 
-    d <- tmpDataOptimizeModel[input$optimizeNewdata_rows_selected , ]
+    d <- tmpData$OptimizeModel[input$optimizeNewdata_rows_selected , ]
 
 
 
@@ -921,7 +988,64 @@ shinyServer(function(input, output , session) {
 
   })
 
-
+  output$NNoptimizeNewdata <-  DT::renderDataTable({
+    
+    return(DT::datatable(data = tmpData$OptimizeModel  , filter = 'top',options = list(scrollX = TRUE) , selection = "single"))
+    
+  }, caption = "Select an observation to find the nearest neighbors")
+  
+  observe({
+    
+    newData <- tmpData$OptimizeModel[input$NNoptimizeNewdata_rows_selected , ]
+    
+    
+    validate(need(!is.null(plotfun) , "No plot function avaiable!\n"),
+             need(!is.null(tmpData$OptimizeModel) , "No model selected!\n"),
+             need(!is.null(input$NNoptimizeNewdata_rows_selected) , "No row selected!\n")
+    )
+    
+    searchspace <- data$modelretrained$data[-input$NNoptimizeNewdata_rows_selected , c(data$modelretrained$model$features , data$modelretrained$model$task.desc$target)]
+    
+    searchspace <- removeNAs(searchspace)
+    
+    neighbours <- try(nearestNeighbors(uniqueIdentifier = NULL , searchspace = searchspace , newData = newData , targetColumn = data$modelretrained$model$task.desc$target))
+    
+    output$nearestNeighborTRUEOptimizeMod <- renderPlot({
+      
+      
+      if(class(neighbours) == "try-error"){
+        return(NULL)
+      }
+      plotfun(neighbours[[1]][1,])
+      
+    })
+    output$nearestNeighborExOptimizeMod <- renderPlot({
+      
+      if(class(neighbours) == "try-error"){
+        return(NULL)
+      }
+      
+      plotfun(neighbours[[1]][2,])
+      
+      
+      
+    })
+    
+    output$nearestNeighborFALSEOptimizeMod <- renderPlot({
+      
+      if(class(neighbours) == "try-error"){
+        return(NULL)
+      }
+      
+      plotfun(neighbours[[1]][3,])
+      
+      
+      
+    })
+    
+  })
+  
+  
   output$optimizeSaveModel<- downloadHandler(filename = function(){"reevaluatedModel.RData"} , content = function(file){
 
     data$modelretrained[["plotfun_Env"]] <- plotfun_Env

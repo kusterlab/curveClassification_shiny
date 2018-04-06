@@ -99,8 +99,18 @@ shinyUI(
 
                                                                    DT::dataTableOutput("generateModelData"),
                                                                    uiOutput("plotsGenerateModels")
+                                                                
+                                                                   
 
-                                                                   )
+                                                                   ),
+                                                          tabPanel("Nearest Neighbors",
+                                                                   
+                                                                   DT::dataTableOutput("NNgenerateModelData"),
+                                                                   h3("Nearest neighbor plots of the selected observation"),
+                                                                   br(),
+                                                                   splitLayout(h4("nearest neighbor: TRUE") , h4("Selected observation") , h4("nearest neighbor: FALSE"), cellWidths = c("33%", "33%" ,"33%" )),
+                                                                   splitLayout(plotOutput("nearestNeighborTRUEGenNewMod")  , plotOutput("nearestNeighborExGenNewMod")  ,plotOutput("nearestNeighborFALSEGenNewMod") , cellWidths = c("33%", "33%" ,"33%" ))
+                                                          )
 
 
 
@@ -176,6 +186,14 @@ shinyUI(
                                                      DT::dataTableOutput("optimizeNewdata"),
                                                      uiOutput("plotsOptimizeModel")
 
+                                            ),
+                                            tabPanel("Nearest Neighbors",
+                                                     
+                                                     DT::dataTableOutput("NNoptimizeNewdata"),
+                                                     h3("Nearest neighbor plots of the selected observation"),
+                                                     br(),
+                                                     splitLayout(h4("nearest neighbor: TRUE") , h4("Selected observation") , h4("nearest neighbor: FALSE"), cellWidths = c("33%", "33%" ,"33%" )),
+                                                     splitLayout(plotOutput("nearestNeighborTRUEOptimizeMod")  , plotOutput("nearestNeighborExOptimizeMod")  ,plotOutput("nearestNeighborFALSEOptimizeMod") , cellWidths = c("33%", "33%" ,"33%" ))
                                             )
                                           )
 
