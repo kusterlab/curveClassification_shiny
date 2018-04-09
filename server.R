@@ -619,7 +619,7 @@ observe({
       # get with the rownames the nearest neighbors from the original data which contain everything required for plotting
       neighbours <- neighbours[[1]]
       neighbours <- data$model$data[rownames(neighbours) , ]
-      
+      #neighbours contians additional the column targets which is an artefact from the neighbors function but has no effect
     }
     
     output$nearestNeighborTRUEGenNewMod <- renderPlot({
