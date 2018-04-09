@@ -615,13 +615,20 @@ observe({
     
     neighbours <- try(nearestNeighbors(uniqueIdentifier = NULL , searchspace = searchspace , newData = newData , targetColumn = data$model$model$task.desc$target))
     
+    if(class(neighbours) != "try-error"){
+      # get with the rownames the nearest neighbors from the original data which contain everything required for plotting
+      neighbours <- neighbours[[1]]
+      neighbours <- data$model$data[rownames(neighbours) , ]
+      
+    }
+    
     output$nearestNeighborTRUEGenNewMod <- renderPlot({
       
       
       if(class(neighbours) == "try-error"){
         return(NULL)
       }
-      plotfun(neighbours[[1]][1,])
+      plotfun(neighbours[1,])
       
     })
     output$nearestNeighborExGenNewMod <- renderPlot({
@@ -630,7 +637,7 @@ observe({
         return(NULL)
       }
       
-      plotfun(neighbours[[1]][2,])
+      plotfun(neighbours[2,])
       
       
       
@@ -642,7 +649,7 @@ observe({
         return(NULL)
       }
       
-      plotfun(neighbours[[1]][3,])
+      plotfun(neighbours[3,])
       
       
       
@@ -1010,13 +1017,20 @@ output$optimizeNewdata <-  DT::renderDataTable({
     
     neighbours <- try(nearestNeighbors(uniqueIdentifier = NULL , searchspace = searchspace , newData = newData , targetColumn = data$modelretrained$model$task.desc$target))
     
+    if(class(neighbours) != "try-error"){
+      # get with the rownames the nearest neighbors from the original data which contain everything required for plotting
+      neighbours <- neighbours[[1]]
+      neighbours <- data$modelretrained$data[rownames(neighbours) , ]
+      
+    }
+    
     output$nearestNeighborTRUEOptimizeMod <- renderPlot({
       
       
       if(class(neighbours) == "try-error"){
         return(NULL)
       }
-      plotfun(neighbours[[1]][1,])
+      plotfun(neighbours[1,])
       
     })
     output$nearestNeighborExOptimizeMod <- renderPlot({
@@ -1025,7 +1039,7 @@ output$optimizeNewdata <-  DT::renderDataTable({
         return(NULL)
       }
       
-      plotfun(neighbours[[1]][2,])
+      plotfun(neighbours[2,])
       
       
       
@@ -1037,7 +1051,7 @@ output$optimizeNewdata <-  DT::renderDataTable({
         return(NULL)
       }
       
-      plotfun(neighbours[[1]][3,])
+      plotfun(neighbours[3,])
       
       
       
@@ -1452,13 +1466,20 @@ observeEvent(input$validate.go , {
 
     neighbours <- try(nearestNeighbors(uniqueIdentifier = NULL , searchspace = searchspace , newData = newData , targetColumn = data$pred$task.desc$target))
 
+    if(class(neighbours) != "try-error"){
+      # get with the rownames the nearest neighbors from the original data which contain everything required for plotting
+      neighbours <- neighbours[[1]]
+      neighbours <- data$model$data[rownames(neighbours) , ]
+      
+    }
+    
     output$nearestNeighborTRUE <- renderPlot({
 
 
       if(class(neighbours) == "try-error"){
         return(NULL)
       }
-      plotfun(neighbours[[1]][1,])
+      plotfun(neighbours[1,])
 
   })
     output$nearestNeighborEx <- renderPlot({
@@ -1467,7 +1488,7 @@ observeEvent(input$validate.go , {
         return(NULL)
       }
 
-      plotfun(neighbours[[1]][2,])
+      plotfun(neighbours[2,])
 
 
 
@@ -1479,7 +1500,7 @@ observeEvent(input$validate.go , {
         return(NULL)
       }
 
-      plotfun(neighbours[[1]][3,])
+      plotfun(neighbours[3,])
 
 
 
