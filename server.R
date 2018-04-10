@@ -1363,8 +1363,8 @@ observeEvent(input$validate.go , {
         colnames(d) <- gsub("prob.TRUE" , "probability" , colnames(d))
         colnames(d) <- gsub("response" , data$pred$task.desc$target , colnames(d))
 
-
-        d <- cbind(data$newdata , d)
+        #grep removes the target collumn of the input data in order to avoid uncertainty
+        d <- cbind(d , data$newdata[,grep(data$pred$task.desc$target , x = names(data$newdata) , invert = T)])
 
         data.prediction.download <<- d
 
@@ -1434,8 +1434,8 @@ observeEvent(input$validate.go , {
         colnames(d) <- gsub("prob.TRUE" , "probability" , colnames(d))
         colnames(d) <- gsub("response" , data$pred$task.desc$target , colnames(d))
 
-        d <- cbind(data$newdata , d)
-
+        #grep removes the target collumn of the input data in order to avoid uncertainty
+        d <- cbind(d , data$newdata[,grep(data$pred$task.desc$target , x = names(data$newdata) , invert = T)])
 
 
         return(DT::datatable(data = d , filter = 'top', options = list(scrollX = TRUE) ,selection = 'single'))
@@ -1470,6 +1470,11 @@ observeEvent(input$validate.go , {
       # get with the rownames the nearest neighbors from the original data which contain everything required for plotting
       neighbours <- neighbours[[1]]
       neighbours <- data$model$data[rownames(neighbours) , ]
+      #neighbours does not contain nessearyly the serach query therefore on position 2 the origdata is added
+      #the grep is two times nesessary to ensure the same order of classes
+      print(newData)
+      print(grep(paste0(names(newData) , collapse = "|") , names(neighbours)))
+      neighbours[2 , grep(paste0(names(newData) , collapse = "|") , names(neighbours))] <- newData[,grep(paste0(names(newData) , collapse = "|") , names(neighbours) , value = T)]
       
     }
     

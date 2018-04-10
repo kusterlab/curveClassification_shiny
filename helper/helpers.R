@@ -36,7 +36,14 @@ generateFunctionList <- function(functions = vector() , pattern = vector())
   # initialize a list of functions
   functionList <- list()
   
- 
+    if(length(functions) > 1 && length(pattern) == 1){
+      pattern <- rep(pattern , times = length(functions))
+      
+    }else if(length(functions)>1 && length(pattern) != length(functions)){
+      
+      stop("If you specifiy more than one pattern the number of patterns must match the number of functions")
+      
+    }
     # for every function in functions and for every pattern a list entrie is generated
     for(i in 1:length(functions)){
       
