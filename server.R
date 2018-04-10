@@ -11,6 +11,7 @@ require(beanplot)
 require(data.table)
 require(RANN)
 require(DT)
+require(caret)
 
         
       
@@ -613,14 +614,16 @@ observe({
     
     searchspace <- removeNAs(searchspace)
     
-    neighbours <- try(nearestNeighbors(uniqueIdentifier = NULL , searchspace = searchspace , newData = newData , targetColumn = data$model$model$task.desc$target))
+    neighbours <- try(nearestNeighbors(searchspace = searchspace , newData = newData , targetColumn = data$model$model$task.desc$target))
     
     if(class(neighbours) != "try-error"){
+      
       # get with the rownames the nearest neighbors from the original data which contain everything required for plotting
-      neighbours <- neighbours[[1]]
       neighbours <- data$model$data[rownames(neighbours) , ]
       #neighbours contians additional the column targets which is an artefact from the neighbors function but has no effect
     }
+    
+    
     
     output$nearestNeighborTRUEGenNewMod <- renderPlot({
       
@@ -637,7 +640,7 @@ observe({
         return(NULL)
       }
       
-      plotfun(neighbours[2,])
+      plotfun(neighbours[3,])
       
       
       
@@ -649,7 +652,7 @@ observe({
         return(NULL)
       }
       
-      plotfun(neighbours[3,])
+      plotfun(neighbours[2,])
       
       
       
@@ -1015,11 +1018,10 @@ output$optimizeNewdata <-  DT::renderDataTable({
     
     searchspace <- removeNAs(searchspace)
     
-    neighbours <- try(nearestNeighbors(uniqueIdentifier = NULL , searchspace = searchspace , newData = newData , targetColumn = data$modelretrained$model$task.desc$target))
+    neighbours <- try(nearestNeighbors(searchspace = searchspace , newData = newData , targetColumn = data$modelretrained$model$task.desc$target))
     
     if(class(neighbours) != "try-error"){
       # get with the rownames the nearest neighbors from the original data which contain everything required for plotting
-      neighbours <- neighbours[[1]]
       neighbours <- data$modelretrained$data[rownames(neighbours) , ]
       
     }
@@ -1039,7 +1041,7 @@ output$optimizeNewdata <-  DT::renderDataTable({
         return(NULL)
       }
       
-      plotfun(neighbours[2,])
+      plotfun(neighbours[3,])
       
       
       
@@ -1051,7 +1053,7 @@ output$optimizeNewdata <-  DT::renderDataTable({
         return(NULL)
       }
       
-      plotfun(neighbours[3,])
+      plotfun(neighbours[2,])
       
       
       
@@ -1464,18 +1466,17 @@ observeEvent(input$validate.go , {
 
     searchspace <- removeNAs(searchspace)
 
-    neighbours <- try(nearestNeighbors(uniqueIdentifier = NULL , searchspace = searchspace , newData = newData , targetColumn = data$pred$task.desc$target))
+    neighbours <- try(nearestNeighbors(searchspace = searchspace , newData = newData , targetColumn = data$pred$task.desc$target))
 
     if(class(neighbours) != "try-error"){
       # get with the rownames the nearest neighbors from the original data which contain everything required for plotting
-      neighbours <- neighbours[[1]]
       neighbours <- data$model$data[rownames(neighbours) , ]
-      #neighbours does not contain nessearyly the serach query therefore on position 2 the origdata is added
+      #neighbours does not contain nessearyly the serach query therefore on position 3 the origdata is added
       #the grep is two times nesessary to ensure the same order of classes
-      print(newData)
-      print(grep(paste0(names(newData) , collapse = "|") , names(neighbours)))
-      neighbours[2 , grep(paste0(names(newData) , collapse = "|") , names(neighbours))] <- newData[,grep(paste0(names(newData) , collapse = "|") , names(neighbours) , value = T)]
+      neighbours[3 , ] <- NA
+      neighbours[3 , grep(paste0(names(newData) , collapse = "|") , names(neighbours))] <- newData[,grep(paste0(names(newData) , collapse = "|") , names(neighbours) , value = T)]
       
+
     }
     
     output$nearestNeighborTRUE <- renderPlot({
@@ -1493,7 +1494,7 @@ observeEvent(input$validate.go , {
         return(NULL)
       }
 
-      plotfun(neighbours[2,])
+      plotfun(neighbours[3,])
 
 
 
@@ -1505,7 +1506,7 @@ observeEvent(input$validate.go , {
         return(NULL)
       }
 
-      plotfun(neighbours[3,])
+      plotfun(neighbours[2,])
 
 
 
@@ -1705,7 +1706,19 @@ observeEvent(input$validate.go , {
 
   })
 
+  output$plotfuncode <- renderPrint({
+    
+    validate(need(!is.null(plotfun), message = "No plot function avaiable!\n"))
+    
+    plotfun_Env
+    
+    
   })
+  
+  
+  })
+  
+  
 
   ### model parameters ###
 
@@ -1726,6 +1739,15 @@ observeEvent(input$validate.go , {
     DT::datatable(d , options = list(paging = FALSE, searching = FALSE,
                                                              bInfo = FALSE, ordering = FALSE , colnames = FALSE ))
   } , rownames= FALSE)
+  
+  
+  output$fgf_calls <- renderPrint({
+    validate(need(!is.null(data$model) , "No model loaded"))
+   
+    data$model$funList
+     
+    
+  })
 
 
 })

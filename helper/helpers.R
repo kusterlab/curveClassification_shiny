@@ -418,7 +418,7 @@ beanPlotFeatures <- function(data , target , subsetvariable = NULL , col = c("or
 
 #it was added all with prob.TRUE on 27.2
 
-nearestNeighbors <- function(uniqueIdentifier , searchspace , newData , nNeighbor = 1000  , targetColumn = "Target" )
+nearestNeighbors <- function(searchspace , newData , nNeighbor = 1000  , targetColumn = "Target" )
 {
   # searchspace contains only columns of intrest
   
@@ -437,37 +437,27 @@ nearestNeighbors <- function(uniqueIdentifier , searchspace , newData , nNeighbo
   
   searchspace <- rbind(searchspace , newData)
   
-  targets <- searchspace[ , targetColumn]
-  
   searchdf <- BBmisc::normalize(x = searchspace[,grep(targetColumn , names(searchspace) , invert = T)] , method = "standardize" )
   
+  nearestNeighbor <- RANN::nn2(data = searchdf[-(lengthSearchspace+1) , ] , query = searchdf[(lengthSearchspace+1) , ] , k = nNeighbor)
   
-  searchspace <- cbind(searchspace , Targets = targets)
-  
-  
-  nearestNeighbor <- RANN::nn2(data = searchdf[,grep(targetColumn , names(searchdf) , invert = T)] , query = searchdf[-c(1:lengthSearchspace) , grep(targetColumn , names(searchdf) , invert = T)] , k = nNeighbor)
-  
-  neighborsdata <- apply(nearestNeighbor[["nn.idx"]] , 1 , function(x , searchspace){
+    tmpData <- searchspace[nearestNeighbor[["nn.idx"]] , ]
     
-    tmpData <- searchspace[x,]
+    indexObserved <- tmpData[,targetColumn] == TRUE
     
+
     # minus one nessesary due to the fact that the first nearest neighbor is the observation itself and should not occur
     # later on the one is added to the index again
-    indexObserved <- tmpData[-1 , "Targets"] == TRUE
-    
-    obsTrue <- min(which(indexObserved == TRUE))
+    obsTrue <- min(which(indexObserved == TRUE), na.rm = T)
     
     obsFalse <- min(which(indexObserved == FALSE) , na.rm = T)
     
-    title <- c("nearest neighbor: TRUE" , "Selected observation" , "nearest neighbor: FALSE")
+    title <- c("nearest neighbor: TRUE" , "nearest neighbor: FALSE")
     
-    return(cbind(tmpData[c(obsTrue+1 ,1 , obsFalse+1), ] , title = title))
+    neighborsdata <- cbind(tmpData[c(obsTrue , obsFalse),], title = title)
+    neighborsdata <- rbind(neighborsdata , cbind(newData , title = "Selected observation"))
     
-    
-    
-  } , searchspace = searchspace)
-  
-  
+
   return(neighborsdata)
   
   

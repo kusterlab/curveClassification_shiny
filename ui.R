@@ -280,14 +280,19 @@ shinyUI(
                                                       mainPanel(width = 9 ,
                                                                 h4("Objects sourced from the script"),
                                                                 DT::dataTableOutput("plotEnv_list") ,br() ,  h4("Testplot") ,
-                                                                plotOutput("testplot"))
+                                                                plotOutput("testplot"),
+                                                                h4("Plot function"),
+                                                                verbatimTextOutput("plotfuncode"))
                                              ),
                                              tabPanel("Model parameters" ,
                                                       h3("Hyperparameters"),
                                                       DT::dataTableOutput("Hyperpars"),
                                                       br(),
                                                       h3("Used features"),
-                                                      DT::dataTableOutput("Features")
+                                                      DT::dataTableOutput("Features"),
+                                                      br(),
+                                                      h3("Feature generation function calls"),
+                                                      verbatimTextOutput("fgf_calls")
 
                                                       )
                                            ))
