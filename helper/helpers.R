@@ -293,7 +293,10 @@ retrain <- function(combinedModel , newdata , estimatingThreshold = F , tprThres
   newdata[ntrain ,"group"] <- "train"
   newdata[ntest , "group"] <- "test"
   
-  if(keepData){
+  if(is.null(combinedModel$data)){
+    
+    combinedModel$data <- newdata
+  }else if(keepData){
   
   combinedModel$data <- rbind(combinedModel$data , newdata[ , names(combinedModel$data) ])
   
