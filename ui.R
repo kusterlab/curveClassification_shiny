@@ -34,7 +34,7 @@ shinyUI(
                              tags$div("Loading...",id="loadmessage")),
             navbarPage('Curve classification' ,   
                       
-                       tabPanel('Data import' ,value = 1  , icon = icon(name = "fa-database" ,class = "fa fa-database" , lib = "font-awesome") , 
+                       tabPanel('Data import' ,value = 1 , 
                                 fluidPage(
                                   sidebarLayout(
                                     sidebarPanel(width = 3,
@@ -49,7 +49,7 @@ shinyUI(
                                 )
                                 
                        ),
-                       tabPanel('Feature generation' ,icon = icon(name = "fa-area-chart" ,class = "fa fa-area-chart" , lib = "font-awesome") ,
+                       tabPanel('Feature generation'  ,
                                 fluidPage(
                                   sidebarLayout(
                                     sidebarPanel(width = 3,
@@ -71,7 +71,7 @@ shinyUI(
                                 )
 
                        ) ,
-                       tabPanel('Generate new model'  , icon = icon(name = "fa-calculator" ,class = "fa fa-calculator" , lib = "font-awesome"),
+                       tabPanel('Generate new model' ,
                                 fluidPage(
                                   sidebarLayout(
                                     sidebarPanel(width = 3,
@@ -124,7 +124,7 @@ shinyUI(
                                   )
                                 )
                        )  ,
-                       tabPanel('Optimize existing model'  , icon = icon(name = "fa-calculator" ,class = "fa fa-calculator" , lib = "font-awesome"),
+                       tabPanel('Optimize existing model'  ,
 
 
                                 sidebarPanel(width = 3,
