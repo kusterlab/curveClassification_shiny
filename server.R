@@ -414,7 +414,8 @@ shinyServer(function(input, output , session) {
       actionButton("newModel.train" , label = "train"),
 
       
-      downloadButton("saveModel" , "Download model")
+      downloadButton("saveModel" , "Download full model"),
+      downloadButton("saveModelPipeline" , "Download model for pipeline")
        
     )
 
@@ -445,6 +446,18 @@ shinyServer(function(input, output , session) {
 
     saveRDS(data$model , file = file)
 
+  })
+  
+  output$saveModelPipeline <- downloadHandler(filename = function(){"model_for_pipeline.RData"} , content = function(file){
+    
+    data$model[["plotfun_Env"]] <- plotfun_Env
+    
+    tmp <- data$model
+    
+    tmp$data <- NULL
+    
+    saveRDS(tmp , file = file)
+    
   })
 
   observeEvent(input$newModel.train , {
@@ -520,7 +533,8 @@ shinyServer(function(input, output , session) {
  
 observe({
   
-    validate(need(!is.null(data$model) , "No model avaiable!\n"))
+    validate(need(!is.null(data$model) , "No model avaiable!\n"),
+             need(!is.null(data$model$data) , "No data for the model available!"))
 
     isolate({
       pred <- try(predict(data$model , newdata = data$model$data))
@@ -607,7 +621,8 @@ observe({
     
     validate(need(!is.null(plotfun) , "No plot function avaiable!\n"),
              need(!is.null(tmpData$GenerateModel) , "No model selected!\n"),
-             need(!is.null(input$NNgenerateModelData_rows_selected) , "No row selected!\n")
+             need(!is.null(input$NNgenerateModelData_rows_selected) , "No row selected!\n"),
+             need(!is.null(data$model$data) , "No data for the model available!")
             )
     
     searchspace <- data$model$data[-input$NNgenerateModelData_rows_selected , c(data$model$model$features , data$model$model$task.desc$target)]
@@ -662,6 +677,8 @@ observe({
 
 
   observeEvent( data$model, {
+    
+    validate(need(!is.null(data$model$data) , "No data for the model available!"))
 
     pred <- predict(data$model , newdata = data$model$data[ data$model$data$group == "test" , ])
 
@@ -749,7 +766,10 @@ observe({
       sidebarMenu(
         actionButton("optimizeExchangeButton" , label = "Use new model"),
         
-        downloadButton("optimizeSaveModel" , label = "Download model")
+        downloadButton("optimizeSaveModel" , label = "Download full model"),
+        
+        downloadButton("optimizeSaveModelPipeline" , label = "Download model for pipeline")
+        
       )
     }else{
       NULL
@@ -861,6 +881,9 @@ observe({
   })
 
   observeEvent(data$modelretrained , {
+    
+    validate(need(!is.null(data$modelretrained$data) , "No data for the model available!"))
+    
 
     pred <- predict(data$model , newdata = data$modelretrained$data[data$modelretrained$data$group == "test",])
 
@@ -932,7 +955,8 @@ observe({
  
 observe({
   
-    validate(need(!is.null(data$modelretrained) , "No retrained model avaiable!\n"))
+    validate(need(!is.null(data$modelretrained) , "No retrained model avaiable!\n"),
+             need(!is.null(data$modelretrained$data) , "No data for the model available!"))
 
     isolate({
     pred <- try(predict(data$modelretrained , newdata = data$modelretrained$data))
@@ -1011,7 +1035,8 @@ output$optimizeNewdata <-  DT::renderDataTable({
     
     validate(need(!is.null(plotfun) , "No plot function avaiable!\n"),
              need(!is.null(tmpData$OptimizeModel) , "No model selected!\n"),
-             need(!is.null(input$NNoptimizeNewdata_rows_selected) , "No row selected!\n")
+             need(!is.null(input$NNoptimizeNewdata_rows_selected) , "No row selected!\n"),
+             need(!is.null(data$modelretrained$data) , "No data for the model available!")
     )
     
     searchspace <- data$modelretrained$data[-input$NNoptimizeNewdata_rows_selected , c(data$modelretrained$model$features , data$modelretrained$model$task.desc$target)]
@@ -1072,6 +1097,19 @@ output$optimizeNewdata <-  DT::renderDataTable({
   })
 
 
+  output$optimizeSaveModelPipeline<- downloadHandler(filename = function(){"reevaluatedModel_for_pipeline.RData"} , content = function(file){
+    
+    data$modelretrained[["plotfun_Env"]] <- plotfun_Env
+    
+    tmp <- data$modelretrained
+    
+    tmp$data <- NULL
+    
+    
+    saveRDS(tmp , file = file)
+    
+  })
+  
   ####Validate Model ####
 
 
@@ -1460,7 +1498,8 @@ observeEvent(input$validate.go , {
 
     validate(need(!is.null(plotfun) , "No plot function avaiable!\n"),
              need(!is.null(data$model) , "No model selected!\n"),
-             need(nrow(newData) > 0 , "No observation selected!"))
+             need(nrow(newData) > 0 , "No observation selected!"),
+             need(!is.null(data$model$data) , "No data for the model available!"))
 
     searchspace <- data$model$data[ , c(data$model$model$features , data$model$model$task.desc$target)]
 
@@ -1710,7 +1749,7 @@ observeEvent(input$validate.go , {
     
     validate(need(!is.null(plotfun), message = "No plot function avaiable!\n"))
     
-    plotfun_Env
+    plotfun
     
     
   })
