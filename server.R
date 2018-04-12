@@ -629,7 +629,7 @@ observe({
     
     searchspace <- removeNAs(searchspace)
     
-    neighbours <- try(nearestNeighbors(searchspace = searchspace , newData = newData , targetColumn = data$model$model$task.desc$target))
+    neighbours <- try(nearestNeighbors(searchspace = searchspace , newData = newData , targetColumn = data$model$model$task.desc$target , nNeighbor = nrow(searchspace)))
     
     if(class(neighbours) != "try-error"){
       
@@ -1043,7 +1043,7 @@ output$optimizeNewdata <-  DT::renderDataTable({
     
     searchspace <- removeNAs(searchspace)
     
-    neighbours <- try(nearestNeighbors(searchspace = searchspace , newData = newData , targetColumn = data$modelretrained$model$task.desc$target))
+    neighbours <- try(nearestNeighbors(searchspace = searchspace , newData = newData , targetColumn = data$modelretrained$model$task.desc$target , nNeighbor = nrow(searchspace)))
     
     if(class(neighbours) != "try-error"){
       # get with the rownames the nearest neighbors from the original data which contain everything required for plotting
@@ -1505,7 +1505,7 @@ observeEvent(input$validate.go , {
 
     searchspace <- removeNAs(searchspace)
 
-    neighbours <- try(nearestNeighbors(searchspace = searchspace , newData = newData , targetColumn = data$pred$task.desc$target))
+    neighbours <- try(nearestNeighbors(searchspace = searchspace , newData = newData , targetColumn = data$pred$task.desc$target , nNeighbor  = nrow(searchspace)))
 
     if(class(neighbours) != "try-error"){
       # get with the rownames the nearest neighbors from the original data which contain everything required for plotting
