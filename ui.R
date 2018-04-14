@@ -86,14 +86,20 @@ shinyUI(
                                               tabsetPanel(tabPanel("Performance" ,
                                                                    h4("Confusion matrix"),
 
-                                                                   tableOutput("ConfusionMatrix"), br(),
+                                                                   verbatimTextOutput("ConfusionMatrix"), br(),
+                                                                   
+                                                                   h4("Performance measures"),
+                                                                   
+                                                                  tableOutput("PerformanceMeasures"),
+                                                                  br(), 
+                                                                   
+                                                                    h4("Performance vs. Threshold"),
 
-
-                                                                   box(plotOutput("performanceVsThreshold"),
+                                                                   plotOutput("performanceVsThreshold", width = "60%" , height = "600px"),
                                                                        br(),
 
                                                                        h4("Probability distribution"),
-                                                                       plotOutput("probabilityDistribution"))
+                                                                       plotOutput("probabilityDistribution" , width = "60%", height = "600px")
                                                                    ),
                                                           tabPanel("Data" ,
 
@@ -146,14 +152,19 @@ shinyUI(
 
                                                               h5("Confusion matrix"),
 
-                                                              tableOutput("ConfusionMatrix.old"), br(),
+                                                              verbatimTextOutput("ConfusionMatrix.old"), br(),
+                                                              h5("Performance measures"),
+                                                              
+                                                              tableOutput("PerformanceMeasures.old"),
+                                                              br(), 
+                                                              
+                                                              h5("Performance vs. Threshold"),
 
-
-                                                              box(plotOutput("performanceVsThreshold.old"),
+                                                             plotOutput("performanceVsThreshold.old"),
                                                                   br(),
 
                                                                   h5("Probability distribution"),
-                                                                  plotOutput("probabilityDistribution.old"))
+                                                                  plotOutput("probabilityDistribution.old")
 
 
                                                             )
@@ -167,14 +178,21 @@ shinyUI(
 
                                                               h5("Confusion matrix"),
 
-                                                              tableOutput("ConfusionMatrix.new"), br(),
+                                                              verbatimTextOutput("ConfusionMatrix.new"), br(),
+                                                              
+                                                              h5("Performance measures"),
+                                                              
+                                                              tableOutput("PerformanceMeasures.new"),
+                                                              br(), 
+                                                              
+                                                              h5("Performance vs. Threshold"),
 
 
-                                                              box(plotOutput("performanceVsThreshold.new"),
+                                                              plotOutput("performanceVsThreshold.new"),
                                                                   br(),
 
                                                                   h5("Probability distribution"),
-                                                                  plotOutput("probabilityDistribution.new"))
+                                                                  plotOutput("probabilityDistribution.new")
 
                                                             )
 

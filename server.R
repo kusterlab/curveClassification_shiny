@@ -690,9 +690,21 @@ observe({
     }
 
 
-    output$ConfusionMatrix <- renderTable({
-      calculateConfusionMatrix(pred)$result
-    } , rownames = T , digits = 0)
+    output$ConfusionMatrix <- renderPrint({
+      calculateConfusionMatrix(pred)
+    })
+    
+    output$PerformanceMeasures <- renderTable({
+      
+      perf <- performance(pred , measures = list(tpr , fpr , acc , ppv , auc))
+      
+      perf <- t(as.data.frame(perf))
+      
+      colnames(perf) <- c("True positive rate" , "False positive rate" , "Accuracy" , "Precision" , "Area under ROC curve")
+      return(perf)
+
+      
+    } , rownames = F , digits = 4)
 
     output$performanceVsThreshold <- renderPlot({
 
@@ -903,9 +915,21 @@ observe({
     }
 
 
-    output$ConfusionMatrix.old <- renderTable({
-      calculateConfusionMatrix(pred)$result
-    } , rownames = T , digits = 0)
+    output$ConfusionMatrix.old <- renderPrint({
+      calculateConfusionMatrix(pred)
+    } )
+    
+    output$PerformanceMeasures.old <- renderTable({
+      
+      perf <- performance(pred , measures = list(tpr , fpr , acc , ppv , auc))
+      
+      perf <- t(as.data.frame(perf))
+      
+      colnames(perf) <- c("True positive rate" , "False positive rate" , "Accuracy" , "Precision" , "Area under ROC curve")
+      return(perf)
+      
+      
+    } , rownames = F , digits = 4)
 
     output$performanceVsThreshold.old <- renderPlot({
 
@@ -925,9 +949,21 @@ observe({
     })
 
 
-    output$ConfusionMatrix.new <- renderTable({
-      calculateConfusionMatrix(predNewMod)$result
-    } , rownames = T , digits = 0)
+    output$ConfusionMatrix.new <- renderPrint({
+      calculateConfusionMatrix(predNewMod)
+    } )
+    
+    output$PerformanceMeasures.new <- renderTable({
+      
+      perf <- performance(predNewMod , measures = list(tpr , fpr , acc , ppv , auc))
+      
+      perf <- t(as.data.frame(perf))
+      
+      colnames(perf) <- c("True positive rate" , "False positive rate" , "Accuracy" , "Precision" , "Area under ROC curve")
+      return(perf)
+      
+      
+    } , rownames = F , digits = 4)
 
     output$performanceVsThreshold.new <- renderPlot({
 
