@@ -12,6 +12,7 @@ require(data.table)
 require(RANN)
 require(DT)
 require(caret)
+require(plotrix)
 
         
       
@@ -1785,7 +1786,11 @@ observeEvent(input$validate.go , {
     
     validate(need(!is.null(plotfun), message = "No plot function avaiable!\n"))
     
-    plotfun
+    for(n in ls(envir = plotfun_Env)){
+      
+      print(plotfun_Env[[n]])
+      
+    }
     
     
   })
