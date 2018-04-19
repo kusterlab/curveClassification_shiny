@@ -506,3 +506,56 @@ summarizeModel <- function(combinedModel){
   
 }
 
+
+#Converts the class of a integer to numerical and form logical/characters to factors
+
+convertClass <- function(data){
+  for(n in 1:dim(data)[2])
+  {
+    if(class(data[,n]) == "integer")
+    {
+      data[,n] <- as.numeric(data[,n])
+    }else if(class(data[,n]) == "logical" ||class(data[,n]) == "character"){
+      
+      data[,n] <- as.factor(data[,n])
+      
+    }
+    
+  }
+  
+  return(data)
+  
+}
+
+getThresholdCV <- function(resampleResult , train.data , tprThreshold = 0.99){
+  
+  thresholdVec <- vector(mode = "numeric" , length = length(resampleResult$models))
+  
+  
+  for(n in 1:length(resampleResult$models)){
+    
+    model <- resampleResult$models[[n]]
+    
+    idxTrain <- setdiff(1:nrow(train.data) , resampleResult$pred$instance$train.inds[[n]])
+    
+    prediction <- predict(model , newdata = train.data[idxTrain,])
+    
+    tmp <- generateThreshVsPerfData(obj = prediction , measures = list(tpr)  , gridsize = 200 )
+    
+    threshold <- tmp$data[tmp$data$tpr > tprThreshold,]
+    
+    threshold <- threshold[order(threshold$threshold , decreasing = T),]
+    
+    thresholdVec[n] <- threshold$threshold[1]
+    
+    
+    
+  }
+  
+  return(mean(thresholdVec , na.rm = T))
+  
+  
+}
+
+
+
