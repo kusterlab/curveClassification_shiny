@@ -26,13 +26,9 @@ options(shiny.maxRequestSize=1000*1024^2)
 
 
 
-#source("V://users_files/Florian Seefried/Master/R_project/Masterthesis/functions/GenerateModel.R")
+#source("V://users_files/Florian Seefried/Master/R_project/Masterthesis/functions/ConvertFeatureClass.R")
 
-#source("V://users_files/Florian Seefried/Master/R_project/Masterthesis/functions/GlobalFeatureGenerationFunctions.R")
-
-source("V://users_files/Florian Seefried/Master/R_project/Masterthesis/functions/ConvertFeatureClass.R")
-
-source("V://users_files/Florian Seefried/Master/R_project/Masterthesis/functions/getThreshold.R")
+#source("V://users_files/Florian Seefried/Master/R_project/Masterthesis/functions/getThreshold.R")
 
 source("./configuration.R")
 
