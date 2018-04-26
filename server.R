@@ -13,7 +13,7 @@ require(RANN)
 require(DT)
 require(caret)
 require(plotrix)
-
+require(CurveClassification)
         
       
 
@@ -232,13 +232,13 @@ shinyServer(function(input, output , session) {
 
         validate(need({length(grep(paste0(patternFun , collapse = "|") , names(data$data))) > 0}, message = "The specified pattern does not occur in the dataset!\n"))
 
-        tmp.fgf.List <<- generateFunctionList(input$fgf.function , patternFun)
+        tmp.fgf.List <<- CurveClassification::generateFunctionList(input$fgf.function , patternFun)
 
       }else if(!is.null(input$fgf.function)){
 
         validate(need({length(grep(paste0(patternFun , collapse = "|") , names(data$data))) > 0}, message = "The specified pattern does not occur in the dataset!\n"))
 
-        tmp <- generateFunctionList(input$fgf.function , patternFun)
+        tmp <- CurveClassification::generateFunctionList(input$fgf.function , patternFun)
 
         tmp.fgf.List <<- c(tmp.fgf.List , tmp)
       }
@@ -246,9 +246,9 @@ shinyServer(function(input, output , session) {
 
       validate(need(!is.null(tmp.fgf.List), message = "No feature generation functions selected!\n"),
                need(!is.null(data$data) , message = "No data set selected!\n"))
-
+      # packages needs to be applied and installed in the uploaded script, furthermore it does not work if once an error occured.
       # length(fgf.List):length(tmp.fgf.List) nessesary to avoid duplications in the column
-      d <- try(evaluateFunList(tmp.fgf.List[(length(fgf.List)+1):length(tmp.fgf.List)] , data$data) , silent = T)
+      d <- try(CurveClassification:::evaluateFunList(tmp.fgf.List[(length(fgf.List)+1):length(tmp.fgf.List)] , data$data) , silent = F)
 
       validate(need(class(d) != "try-error" , message = "An error occured during feature calculation no features calculated!\n"))
       data$newFeatures <<- d
@@ -289,7 +289,7 @@ shinyServer(function(input, output , session) {
       #nessesary to return the dataframe
       d
     }
-  }, options = list(scrollX = TRUE, selection = 'single'),
+  }, options = list(scrollX = TRUE), selection = 'single',
   caption = "You generated the following new dataset" )
 
   output$fgf.beanplot <- renderPlot({
@@ -507,10 +507,10 @@ shinyServer(function(input, output , session) {
 
             usedFeatures <- grep(paste0(paste0("^" , c(features() , TargetColumn()), "$") , collapse = "|") , names(d) , invert = T , value = T)
 
-            data$model <- generateModel(classifier = "classif.randomForest" , us.rate = input$newModel.usRate , features = usedFeatures , data = data_train , targetVariable = TargetColumn() , positiveClass = "TRUE" , estimatingThreshold = tuneThreshold() , tprThreshold = input$newModel.tprTuneValue )
+            data$model <- CurveClassification::generateModel(classifier = classifier , us.rate = input$newModel.usRate , features = usedFeatures , data = data_train , targetVariable = TargetColumn() , positiveClass = "TRUE" , estimatingThreshold = tuneThreshold() , tprThreshold = input$newModel.tprTuneValue )
 
 
-            data$model <- combineModel(trainOutput = data$model , featureFunctionList = fgf.List , test.data = data_test , positveClass = PositiveClass())
+            data$model <- CurveClassification::combineModel(trainOutput = data$model , featureFunctionList = fgf.List , test.data = data_test , positveClass = PositiveClass())
 
 
             return(paste("<font color=\"#7CFC00\"><b>", "Model trained sucessfull", "</b></font>"))
@@ -534,7 +534,7 @@ observe({
              need(!is.null(data$model$data) , "No data for the model available!"))
 
     isolate({
-      pred <- try(predict(data$model , newdata = data$model$data))
+      pred <- try(predict(data$model , newdata = data$model$data , NAtoZero = T))
 
       if(!is.null(data$model$threshold)){
 
@@ -624,7 +624,7 @@ observe({
     
     searchspace <- data$model$data[-input$NNgenerateModelData_rows_selected , c(data$model$model$features , data$model$model$task.desc$target)]
     
-    searchspace <- removeNAs(searchspace)
+    searchspace <- CurveClassification:::removeNAs(searchspace)
     
     neighbours <- try(nearestNeighbors(searchspace = searchspace , newData = newData , targetColumn = data$model$model$task.desc$target , nNeighbor = nrow(searchspace)))
     
@@ -677,7 +677,7 @@ observe({
     
     validate(need(!is.null(data$model$data) , "No data for the model available!"))
 
-    pred <- predict(data$model , newdata = data$model$data[ data$model$data$group == "test" , ])
+    pred <- predict(data$model , newdata = data$model$data[ data$model$data$group == "test" , ] , NAtoZero = T)
 
     if(!is.null(data$model$threshold)){
 
@@ -877,7 +877,7 @@ observe({
 
         d[,data$model$model$task.desc$target] <- ifelse(d[,data$model$model$task.desc$target] == data$model$positiveClass , TRUE , FALSE)
 
-        data$modelretrained <- retrain(combinedModel = data$model , newdata = d , estimatingThreshold = tuneThresholdOptimize() , tprThreshold = input$optimize.tprTuneValue , keepData = input$optimize.keepData)
+        data$modelretrained <- CurveClassification:::retrain(combinedModel = data$model , newdata = d , estimatingThreshold = tuneThresholdOptimize() , tprThreshold = input$optimize.tprTuneValue , keepData = input$optimize.keepData)
 
        return(paste("<font color=\"#7CFC00\"><b>", "Model retrained sucessfull", "</b></font>"))
       })
@@ -894,9 +894,9 @@ observe({
     validate(need(!is.null(data$modelretrained$data) , "No data for the model available!"))
     
 
-    pred <- predict(data$model , newdata = data$modelretrained$data[data$modelretrained$data$group == "test",])
+    pred <- predict(data$model , newdata = data$modelretrained$data[data$modelretrained$data$group == "test",], NAtoZero = T)
 
-    predNewMod <- predict(data$modelretrained , newdata = data$modelretrained$data[data$modelretrained$data$group == "test",])
+    predNewMod <- predict(data$modelretrained , newdata = data$modelretrained$data[data$modelretrained$data$group == "test",], NAtoZero = T)
 
     if(!is.null(data$model$threshold)){
 
@@ -992,7 +992,7 @@ observe({
              need(!is.null(data$modelretrained$data) , "No data for the model available!"))
 
     isolate({
-    pred <- try(predict(data$modelretrained , newdata = data$modelretrained$data))
+    pred <- try(predict(data$modelretrained , newdata = data$modelretrained$data, NAtoZero = T))
 
     if(!is.null(data$modelretrained$threshold)){
 
@@ -1074,7 +1074,7 @@ output$optimizeNewdata <-  DT::renderDataTable({
     
     searchspace <- data$modelretrained$data[-input$NNoptimizeNewdata_rows_selected , c(data$modelretrained$model$features , data$modelretrained$model$task.desc$target)]
     
-    searchspace <- removeNAs(searchspace)
+    searchspace <- CurveClassification:::removeNAs(searchspace)
     
     neighbours <- try(nearestNeighbors(searchspace = searchspace , newData = newData , targetColumn = data$modelretrained$model$task.desc$target , nNeighbor = nrow(searchspace)))
     
@@ -1186,11 +1186,11 @@ observeEvent(input$validate.go , {
 
     if(input$validate.allData){
 
-      pred <- predict(tmpModel , newdata = tmpModel$data[tmpModel$data$group == "test", ])
+      pred <- predict(tmpModel , newdata = tmpModel$data[tmpModel$data$group == "test", ], NAtoZero = T)
 
 
     }else{
-      pred <- predict(tmpModel , newdata = tmpModel$data)
+      pred <- predict(tmpModel , newdata = tmpModel$data, NAtoZero = T)
 
     }
 
@@ -1247,12 +1247,12 @@ observeEvent(input$validate.go , {
 
     if(input$validate.allData){
       #Bug if the new and the old model should be compared since the data stored in the model is used
-      pred <- predict(tmpModel , newdata = tmpModel$data[tmpModel$data$group == "test" , ])
+      pred <- predict(tmpModel , newdata = tmpModel$data[tmpModel$data$group == "test" , ], NAtoZero = T)
 
 
     }else{
 
-      pred <- predict(tmpModel , newdata = tmpModel$data)
+      pred <- predict(tmpModel , newdata = tmpModel$data, NAtoZero = T)
     }
 
     #TOCHECK if its OK with rownames
@@ -1303,7 +1303,7 @@ observeEvent(input$validate.go , {
       ),
       br(),
       #TODO: Think about the output as it is implementet now
-      checkboxInput("predict.NAs" , label = "Force NA containing observations to probability of 0?" , value = T),
+      checkboxInput("predict.NAs" , label = "Force NA containing observations to probability of 0?" , value = F),
       checkboxInput("predict.specifyThreshold" , label = "set manual threshold" , value = F),
 
       numericInput("predict.manualThreshold" , label = "Chose threshold" , min = 0  , value = 0.5, max = 1 , step = 10^-2),
@@ -1522,7 +1522,7 @@ observeEvent(input$validate.go , {
   observe({
 
     if(!is.null(data$model$funList)){
-      newData <- evaluateFunList(funList = data$model$funList , data = data.prediction.download[input$predictionDataNN_rows_selected , ])
+      newData <- CurveClassification:::evaluateFunList(funList = data$model$funList , data = data.prediction.download[input$predictionDataNN_rows_selected , ])
     }else{
       newData <- data.prediction.download[input$predictionDataNN_rows_selected , ]
     }
@@ -1536,7 +1536,7 @@ observeEvent(input$validate.go , {
 
     searchspace <- data$model$data[ , c(data$model$model$features , data$model$model$task.desc$target)]
 
-    searchspace <- removeNAs(searchspace)
+    searchspace <- CurveClassification:::removeNAs(searchspace)
 
     neighbours <- try(nearestNeighbors(searchspace = searchspace , newData = newData , targetColumn = data$pred$task.desc$target , nNeighbor  = nrow(searchspace)))
 

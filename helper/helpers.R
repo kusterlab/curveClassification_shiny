@@ -31,311 +31,7 @@ addPlotTheme = function(plot.obj) {
 }
 
 
-generateFunctionList <- function(functions = vector() , pattern = vector())
-{
-  # initialize a list of functions
-  functionList <- list()
-  
-    if(length(functions) > 1 && length(pattern) == 1){
-      pattern <- rep(pattern , times = length(functions))
-      
-    }else if(length(functions)>1 && length(pattern) != length(functions)){
-      
-      stop("If you specifiy more than one pattern the number of patterns must match the number of functions")
-      
-    }
-    # for every function in functions and for every pattern a list entrie is generated
-    for(i in 1:length(functions)){
-      
-      npat <- pattern[i]
-      nfunc <- functions[i]
-      
-      # assigning the function to the list element
-      functionList[[paste(nfunc , npat ,sep = "_")]] <- try(eval(parse(text = nfunc)) , silent = T)
-      
-      # setting the pattern in the function
-      formals(functionList[[paste(nfunc , npat ,sep = "_")]])[["pattern"]] <- npat
-      
-      
-    }
-    
- 
-  return(functionList)
-  
-}
 
-
-
-
-#function which calls all functions within the function list and evaluates it on the specified data
-evaluateFunList <- function(funList , data){
-  
-  #For every entrie in funList call the function on data
-  for(i in 1:length(funList)){
-    
-    # mainly nessesary in case the user uploads a self defined function
-    data <- try(funList[[i]](data) , silent = T)
-    
-  }
-  
-  return(data)
-  
-} 
-
-# a function which assigns NA to every infinite value
-
-removeInfinites <- function(data){
-  
-  for(n in 1:dim(data)[2])
-  {
-    if(any(!is.finite(data[,n])))
-    {
-      data[!is.finite(data[,n]) , n ] <- NA
-    }
-    
-  }
-  
-}
-
-
-removeNAs <- function(data){
-  
-  idxNA <- apply(data , 1 , function(x) any( is.na(x) ) )
-  
-  data <- data[!idxNA,]
-}
-
-
-
-#TOdo: write an initial function to estimate the us.rate
-
-generateModel <- function(classifier , us.rate , features , data , targetVariable , positiveClass , hyperpars = list() , estimatingThreshold = F , tprThreshold = 0.995){
-  
-  #InitialTrainData to have it consistent with testdata
-  
-  initialData <- data
-  
-  #Generating the initial Learner
-  learner <- makeLearner(classifier , predict.type = "prob" , par.vals = hyperpars)
-  
-  #normalizing the data
-  learner <- makePreprocWrapperCaret(learner ,  ppc.scale = TRUE , ppc.center = TRUE)
-  
-  #create an undersample wrapper
-  learner <- makeUndersampleWrapper(learner , usw.rate = us.rate)
-  
-  # subsetting the data to those variables which are needed
-  data <- data[, c(features , targetVariable) ]
-  
-  # removing all rows which contains any NA
-  data <- removeNAs( data = data )
-  
-  #converting character and logicals to factors and integers to numerics
-  data <- convertClass( data )
-  
-  if(dim(data)[1] == 0){
-    stop("After removal of all rows which contain a NA no observation is left")
-    
-  }
-  
-  # generating the task for the model
-  task <- makeClassifTask( data = data , target = targetVariable , positive = positiveClass )
-  
-  
-  # if the Threshold should be estimated a CV is run and the threshold is returned
-  if(estimatingThreshold){
-    
-    # resample Description
-    resamp <- mlr::makeResampleDesc("CV" , iters = 10 ,stratify = F , predict = "both")
-    
-    # performing the resampling
-    resampResult <- mlr::resample(learner , task , resamp , measure = list(tpr , fpr , acc , ppv , auc) , models = T)
-    
-    # calculating the Threshold based on the prediction of the 10 fold CV
-    optimalthreshold <- getThresholdCV(resampleResult = resampResult , train.data = data , tprThreshold = tprThreshold)
-    
-    
-  }else{
-    
-    optimalthreshold <- NULL
-    
-  }
-  
-  #training the model
-  model <- mlr::train(learner = learner , task = task)
-  
-  
-  output <- list(model = model , optimalthreshold = optimalthreshold , train.data = initialData , task = task , learner = learner)
-  
-  return(output)
-  
-  
-}
-
-
-# function which generates a new list of functions
-combineModel <- function(trainOutput , featureFunctionList , test.data = NULL ,  threshold = NULL , positveClass = NULL){
-  
-  combinedModel <- list()
-  
-  combinedModel[["model"]] <- trainOutput$model
-  
-  combinedModel[["funList"]] <- featureFunctionList
-  
-  if(is.null(threshold)){
-    
-    combinedModel[["threshold"]] <- trainOutput$optimalthreshold
-    
-  }else{
-    combinedModel[["threshold"]] <- threshold
-  }
-  
-  
-  combinedModel[["modelpars"]] <- trainOutput["learner"]
-  
-  combinedModel[["data"]] <- cbind(test.data , group = rep("test" , times = nrow(test.data)))
-  
-  combinedModel[["data"]] <- rbind(combinedModel[["data"]] , cbind(trainOutput[["train.data"]] , group = rep("train" , times = nrow(trainOutput[["train.data"]]))))
-  
-  
-  combinedModel[["positiveClass"]] <- positveClass
-  
-  # Setting a new class for the combined Model in order to predict it with a new function
-  class(combinedModel) <- "WrappedCombiModel"
-  
-  return(combinedModel)
-  
-}
-
-predict.WrappedCombiModel <- function(combinedModel , newdata , NAtoZero = T){
-  
-  #checking if all features are calculated or not, if all features are aviable the prediction is done based on the data otherwise the featrues are calculated
-  if(! all( combinedModel$model$features %in% colnames(newdata) ) && !is.null(combinedModel[["funList"]])){
-    
-    newdata <- evaluateFunList(funList = combinedModel$funList , data = newdata)
-    
-    
-  }
-  
-  # checking if the new data contains now all of the required features
-  if(! all( combinedModel$model$features %in% colnames(newdata) )){
-    stop("Erorr: The features which could be calculated from the functions stored in the WrappedCombiModel do not match the features used to train the model")
-  }
-  
-  #nessesary to adjust the factor levels to those used for the training, grep is nessesary to discard the training dataset
-  
-  for(n in grep(combinedModel$model$task.desc$target , names(combinedModel$model$factor.levels) , invert = T , value = T)){
-
-    newdata[,n] <- factor(x = newdata[,n] , levels = combinedModel$model$factor.levels[[n]])
-    
-  }
-
-  
-  newdata <- convertClass(newdata)
-  
-  
-  #prediction done with the underlaying predict function
-  
-  prediction <- predict(combinedModel$model , newdata = newdata)
-  
-  #if threshold is unequal to NULL the threshold is set to the prediction
-  
-  if(! is.null(combinedModel$threshold)){
-    
-    prediction <- mlr::setThreshold(pred = prediction , threshold = combinedModel$threshold)
-    
-  }
-  
-  #assignin all predictions that contains NA to prob.True = 0
-  if(NAtoZero){
-    
-    idx <- is.na(prediction$data$prob.FALSE)
-    
-    prediction$data[idx , "prob.FALSE"] <- 1
-    prediction$data[idx , "prob.TRUE"] <- 0
-    #TODO: think about this what happens if others than true or false are returned
-    prediction$data[idx , "response"] <- FALSE
-    
-    
-  }
-  
-  
-  
-  return(prediction)
-  
-  
-  
-  
-}
-
-
-retrain <- function(combinedModel , newdata , estimatingThreshold = F , tprThreshold = 0.995 , keepData = F){
-  
-  if(! all( combinedModel$model$features %in% colnames(newdata) ) && !is.null(combinedModel[["funList"]])){
-    
-    newdata <- evaluateFunList(funList = combinedModel$funList , data = newdata)
-    
-    
-  }
-  
-  # checking if the new data contains now all of the required features
-  if(! all( combinedModel$model$features %in% colnames(newdata) )){
-    stop("Erorr: The features which could be calculated from the functions stored in the WrappedCombiModel do not match the features used to train the model")
-  }
-  
- 
-  
-  ntrain <- sample(1:nrow(newdata) , 0.8*nrow(newdata))
-  
-  #for test data the features are not subseted
-  ntest <- setdiff(1:nrow(newdata) , ntrain)
-  
-  newdata[ntrain ,"group"] <- "train"
-  newdata[ntest , "group"] <- "test"
-  
-  if(is.null(combinedModel$data)){
-    
-    combinedModel$data <- newdata
-  }else if(keepData){
-  
-  combinedModel$data <- rbind(combinedModel$data , newdata[ , names(combinedModel$data) ])
-  
-
-  }else{
-    
-    combinedModel$data <-  newdata[ , names(combinedModel$data) ]
-    
-    
-  }
-  
-  newdata <- combinedModel$data[combinedModel$data$group == "train" ,c(combinedModel$model$features , combinedModel$model$task.desc$target)]
-  
-  newdata <- removeNAs( data = newdata )
-  
-  newdata <- convertClass(newdata)
-  
-  task <- makeClassifTask(id = combinedModel$model$task.desc$id , data =  newdata , target = combinedModel$model$task.desc$target , positive = combinedModel$model$task.desc$positive)
-  
-  
-  combinedModel$model <- mlr::train(learner = combinedModel$modelpars$learner , task = task)
-  
-  if(estimatingThreshold){
-    
-    resamp <- mlr::makeResampleDesc("CV" , iters = 10 ,stratify = F , predict = "both")
-    
-    # performing the resampling
-    resampResult <- mlr::resample(combinedModel$modelpars$learner , task , resamp , measure = list(tpr , fpr , acc , ppv , auc) , models = T)
-    
-    # calculating the Threshold based on the prediction of the 10 fold CV
-    combinedModel[["threshold"]] <- getThresholdCV(resampleResult = resampResult , train.data = newdata , tprThreshold = tprThreshold)
-    
-    
-  }
-  
-  
-  return(combinedModel)
-  
-}
 
 
 
@@ -391,7 +87,7 @@ beanPlotFeatures <- function(data , target , subsetvariable = NULL , col = c("or
     if(length(tmp) == 2){
       par(mar=c(5.1,4.1,4.1,2.1))
       beanplot::beanplot(tmp , what = c(1,1,1,0) , ylab = nfeature  , bw = "nrd0" , las = 2 , side = "both" ,  col = list(col[1], c(col[2], "white")) , show.names = F , ylim = c(ylimLower , ylimUpper) )
-      legend("topright" , col = col , legend = names(tmp) , pch = 19  , bty = "n")
+      legend("topright" , col = col , legend = names(tmp) , pch = 19  , bty = "n",  cex = 1.3)
       
       
       
@@ -399,7 +95,7 @@ beanPlotFeatures <- function(data , target , subsetvariable = NULL , col = c("or
       par(mar=c(11.1,4.1,4.1,2.1))
       
       beanplot::beanplot(tmp , what = c(1,1,1,0) , ylab = nfeature  , bw = "nrd0" , las = 2 , side = "both" ,  col = list(col[1], c(col[2], "white")) , ... , ylim = c(ylimLower , ylimUpper) )
-      legend("topright" , col = col , legend = unique(data$target) , pch = 19  , bty = "n")
+      legend("topright" , col = col , legend = unique(data$target) , pch = 19  , bty = "n" , cex = 1.3)
       par(mar=c(5.1,4.1,4.1,2.1))
       
     }else{
@@ -506,56 +202,16 @@ summarizeModel <- function(combinedModel){
   
 }
 
-
-#Converts the class of a integer to numerical and form logical/characters to factors
-
-convertClass <- function(data){
-  for(n in 1:dim(data)[2])
-  {
-    if(class(data[,n]) == "integer")
-    {
-      data[,n] <- as.numeric(data[,n])
-    }else if(class(data[,n]) == "logical" ||class(data[,n]) == "character"){
-      
-      data[,n] <- as.factor(data[,n])
-      
-    }
+evaluateFunList <- function(funList , data){
+  
+  #For every entrie in funList call the function on data
+  for(i in 1:length(funList)){
+    
+    # mainly nessesary in case the user uploads a self defined function
+    data <- try(funList[[i]](data) , silent = T)
     
   }
   
   return(data)
   
-}
-
-getThresholdCV <- function(resampleResult , train.data , tprThreshold = 0.99){
-  
-  thresholdVec <- vector(mode = "numeric" , length = length(resampleResult$models))
-  
-  
-  for(n in 1:length(resampleResult$models)){
-    
-    model <- resampleResult$models[[n]]
-    
-    idxTrain <- setdiff(1:nrow(train.data) , resampleResult$pred$instance$train.inds[[n]])
-    
-    prediction <- predict(model , newdata = train.data[idxTrain,])
-    
-    tmp <- generateThreshVsPerfData(obj = prediction , measures = list(tpr)  , gridsize = 200 )
-    
-    threshold <- tmp$data[tmp$data$tpr > tprThreshold,]
-    
-    threshold <- threshold[order(threshold$threshold , decreasing = T),]
-    
-    thresholdVec[n] <- threshold$threshold[1]
-    
-    
-    
-  }
-  
-  return(mean(thresholdVec , na.rm = T))
-  
-  
-}
-
-
-
+} 
