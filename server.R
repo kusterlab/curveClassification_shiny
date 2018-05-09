@@ -20,9 +20,7 @@ require(CurveClassification)
 
 
 
-## Limits the upload size to 1GB
 
-options(shiny.maxRequestSize=1000*1024^2)
 
 
 
@@ -1330,10 +1328,6 @@ observeEvent(input$validate.go , {
     
     
   })
-
-
-
-
 
 
 
