@@ -29,12 +29,14 @@ shinyUI(
                       tags$link(rel = "icon" , href="curve.png"),
                       tags$title("Curve classification tool")
             ),
+            
             useShinyjs(),
+            
             conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                              
                              tags$div("Loading...",id="loadmessage")),
             navbarPage('Curve classification' ,   
-                      
+                       
                        tabPanel('Data import' ,value = 1 , 
                                 fluidPage(
                                   sidebarLayout(
@@ -62,15 +64,15 @@ shinyUI(
                                                 span(textOutput("fgf.messages") , style="color:red")),
                                               box(width = 12, DT::dataTableOutput("fgf.preview")
                                               ),br(),
-
+                                              
                                               plotOutput("fgf.beanplot" , height = 700 )
-
-
+                                              
+                                              
                                     )
-
+                                    
                                   )
                                 )
-
+                                
                        ) ,
                        tabPanel('Generate new model' ,
                                 fluidPage(
@@ -86,54 +88,50 @@ shinyUI(
                                               br(),
                                               tabsetPanel(tabPanel("Performance" ,
                                                                    h4("Confusion matrix"),
-
+                                                                   
                                                                    verbatimTextOutput("ConfusionMatrix"), br(),
                                                                    
                                                                    h4("Performance measures"),
                                                                    
-                                                                  tableOutput("PerformanceMeasures"),
-                                                                  br(), 
+                                                                   tableOutput("PerformanceMeasures"),
+                                                                   br(), 
                                                                    
-                                                                    h4("Performance vs. Threshold"),
-
+                                                                   h4("Performance vs. Threshold"),
+                                                                   
                                                                    plotOutput("performanceVsThreshold", width = "60%" , height = "600px"),
-                                                                       br(),
-
-                                                                       h4("Probability distribution"),
-                                                                       plotOutput("probabilityDistribution" , width = "60%", height = "600px")
-                                                                   ),
-                                                          tabPanel("Data" ,
-
-                                                                   DT::dataTableOutput("generateModelData"),
-                                                                   uiOutput("plotsGenerateModels")
-                                                                
-                                                                   
-
-                                                                   ),
-                                                          tabPanel("Nearest Neighbors",
-                                                                   
-                                                                   DT::dataTableOutput("NNgenerateModelData"),
-                                                                   h3("Nearest neighbor plots of the selected observation"),
                                                                    br(),
-                                                                   splitLayout(h4("nearest neighbor: TRUE") , h4("Selected observation") , h4("nearest neighbor: FALSE"), cellWidths = c("33%", "33%" ,"33%" )),
-                                                                   splitLayout(plotOutput("nearestNeighborTRUEGenNewMod")  , plotOutput("nearestNeighborExGenNewMod")  ,plotOutput("nearestNeighborFALSEGenNewMod") , cellWidths = c("33%", "33%" ,"33%" ))
-                                                          )
-
-
-
-
-                                                          )
-
-
-
+                                                                   
+                                                                   h4("Probability distribution"),
+                                                                   plotOutput("probabilityDistribution" , width = "60%", height = "600px")
+                                              ),
+                                              tabPanel("Data" ,
+                                                       
+                                                       DT::dataTableOutput("generateModelData"),
+                                                       uiOutput("plotsGenerateModels")
+                                                       
+                                                       
+                                                       
+                                              ),
+                                              tabPanel("Nearest Neighbors",
+                                                       
+                                                       DT::dataTableOutput("NNgenerateModelData"),
+                                                       h3("Nearest neighbor plots of the selected observation"),
+                                                       br(),
+                                                       splitLayout(h4("nearest neighbor: TRUE") , h4("Selected observation") , h4("nearest neighbor: FALSE"), cellWidths = c("33%", "33%" ,"33%" )),
+                                                       splitLayout(plotOutput("nearestNeighborTRUEGenNewMod")  , plotOutput("nearestNeighborExGenNewMod")  ,plotOutput("nearestNeighborFALSEGenNewMod") , cellWidths = c("33%", "33%" ,"33%" ))
+                                              )
+                                              
+                                              
+                                              )
+                                              
                                     )
-
+                                    
                                   )
                                 )
                        )  ,
                        tabPanel('Optimize existing model'  ,
-
-
+                                
+                                
                                 sidebarPanel(width = 3,
                                              uiOutput("optimize.ui"),
                                              uiOutput("optimizeExchangeButton")
@@ -143,16 +141,16 @@ shinyUI(
                                             h4("Messages"),
                                             htmlOutput("optimizeMessages" )  ),
                                           tabsetPanel(
-
-
+                                            
+                                            
                                             tabPanel("Performance" ,
                                                      column(width = 4.5 ,
                                                             box(
-
+                                                              
                                                               h4("Old model"),
-
+                                                              
                                                               h5("Confusion matrix"),
-
+                                                              
                                                               verbatimTextOutput("ConfusionMatrix.old"), br(),
                                                               h5("Performance measures"),
                                                               
@@ -160,25 +158,25 @@ shinyUI(
                                                               br(), 
                                                               
                                                               h5("Performance vs. Threshold"),
-
-                                                             plotOutput("performanceVsThreshold.old"),
-                                                                  br(),
-
-                                                                  h5("Probability distribution"),
-                                                                  plotOutput("probabilityDistribution.old")
-
-
+                                                              
+                                                              plotOutput("performanceVsThreshold.old"),
+                                                              br(),
+                                                              
+                                                              h5("Probability distribution"),
+                                                              plotOutput("probabilityDistribution.old")
+                                                              
+                                                              
                                                             )
-
-
+                                                            
+                                                            
                                                      ),
                                                      column(width = 4.5 ,
                                                             box(
-
+                                                              
                                                               h4("New model"),
-
+                                                              
                                                               h5("Confusion matrix"),
-
+                                                              
                                                               verbatimTextOutput("ConfusionMatrix.new"), br(),
                                                               
                                                               h5("Performance measures"),
@@ -187,24 +185,24 @@ shinyUI(
                                                               br(), 
                                                               
                                                               h5("Performance vs. Threshold"),
-
-
+                                                              
+                                                              
                                                               plotOutput("performanceVsThreshold.new"),
-                                                                  br(),
-
-                                                                  h5("Probability distribution"),
-                                                                  plotOutput("probabilityDistribution.new")
-
+                                                              br(),
+                                                              
+                                                              h5("Probability distribution"),
+                                                              plotOutput("probabilityDistribution.new")
+                                                              
                                                             )
-
-
+                                                            
+                                                            
                                                      )
                                             ),
                                             tabPanel("Data" ,
-
+                                                     
                                                      DT::dataTableOutput("optimizeNewdata"),
                                                      uiOutput("plotsOptimizeModel")
-
+                                                     
                                             ),
                                             tabPanel("Nearest Neighbors",
                                                      
@@ -215,20 +213,18 @@ shinyUI(
                                                      splitLayout(plotOutput("nearestNeighborTRUEOptimizeMod")  , plotOutput("nearestNeighborExOptimizeMod")  ,plotOutput("nearestNeighborFALSEOptimizeMod") , cellWidths = c("33%", "33%" ,"33%" ))
                                             )
                                           )
-
-
+                                          
+                                          
                                 )
-
-
-
+                                
                        )   ,
                        tabPanel("Validate Model",
-
+                                
                                 sidebarPanel(width = 3 ,
-
+                                             
                                              uiOutput("validate.ui")
-
-                                             ),
+                                             
+                                ),
                                 mainPanel(width = 9,
                                           tabsetPanel(
                                             tabPanel("False Positives" ,
@@ -236,42 +232,40 @@ shinyUI(
                                             tabPanel("False Negatives" ,
                                                      uiOutput("plotsFN"))
                                           ))
-
-
-
-                                ),
+                                
+                       ),
                        tabPanel("Predict" ,
-
+                                
                                 sidebarPanel(width = 3,
                                              uiOutput("predict.ui")
                                 ),
                                 mainPanel(width = 9 ,
                                           tabsetPanel(
                                             tabPanel("prediction" ,
-
+                                                     
                                                      DT::dataTableOutput("predictionData"),
                                                      uiOutput("plotsPrediction")
-
-
+                                                     
+                                                     
                                             ) ,
                                             tabPanel("Nearest Neighbors",
-
+                                                     
                                                      DT::dataTableOutput("predictionDataNN"),
                                                      h3("Nearest neighbor plots of the selected observation"),
                                                      br(),
                                                      splitLayout(h4("nearest neighbor: TRUE") , h4("Selected observation") , h4("nearest neighbor: FALSE"), cellWidths = c("33%", "33%" ,"33%" )),
                                                      splitLayout(plotOutput("nearestNeighborTRUE")  , plotOutput("nearestNeighborEx")  ,plotOutput("nearestNeighborFALSE") , cellWidths = c("33%", "33%" ,"33%" ))
-
-
+                                                     
+                                                     
                                             ))
-
-
+                                          
+                                          
                                 )
                        ),
                        navbarMenu("More" ,
                                   tabPanel("Explore data" ,
                                            bootstrapPage(
-
+                                             
                                              uiOutput("data.summary.box"),
                                              box(width = 12, title = "Variable Visualization", id = "summary.vis.box",
                                                  fluidRow(
@@ -282,17 +276,15 @@ shinyUI(
                                                    )
                                                  )
                                              )
-
+                                             
                                            )
-
-
-
-
+                                           
+                                           
                                   ),
                                   tabPanel("Others" ,
                                            tabsetPanel(
                                              tabPanel("Upload plot function"  ,
-
+                                                      
                                                       sidebarPanel( width = 3 ,
                                                                     fileInput("plotScript" , label = "Select a plot script")
                                                       ),
@@ -312,23 +304,10 @@ shinyUI(
                                                       br(),
                                                       h3("Feature generation function calls"),
                                                       verbatimTextOutput("fgf_calls")
-
-                                                      )
+                                                      
+                                             )
                                            ))
                        )
-
-                       
-                       
-                       
-                       
-                       
-                       
-                       
-                       
-                       
-                       
-                       
-                       
                        
                        
             )

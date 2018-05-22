@@ -1,5 +1,5 @@
 
-
+# A function that checks whehter a varaiable is aviable and assigns it to another variable, used for the data exploration part imported from mlr shiny
 
 reqAndAssign = function(obj, name) {
   req(obj)
@@ -7,15 +7,20 @@ reqAndAssign = function(obj, name) {
 }
 
 
+# A function that checks whehter data is uploaded or not.
+
 validateData = function(df) {
   validate(need(class(df) == "data.frame", "You didn't import any data."))
 }
+
+
 
 reqNFeat = function(feat.sel, df) {
   req(all(feat.sel %in% colnames(df)))
 }
 
 
+# Generation of a plot Theme used for the data exploration part imported from mlr shiny
 
 addPlotTheme = function(plot.obj) {
   plot.theme = theme(axis.line = element_line(size = 1, colour = "black"),
@@ -33,7 +38,8 @@ addPlotTheme = function(plot.obj) {
 
 
 
-
+# A function that generates a violin plot with the respective target densitys for the positive and the negative class
+# TODO: Maybe change predictionLFQ and so on and remove lowConfidenceTargets since it is not used in the shiny application
 
 plotTargetDensity <- function(predictionLFQ , thresholdLFQ , lowConfidenceTargets = NULL){
   
@@ -54,9 +60,12 @@ plotTargetDensity <- function(predictionLFQ , thresholdLFQ , lowConfidenceTarget
 
 
 
+#Function to vizualize the differences of the distribution for a selcted feature
 
 beanPlotFeatures <- function(data , target , subsetvariable = NULL , col = c("orange" , "blue") ,quantileCut = F  , interquantile = 10 ,  ...){
   
+  
+  #subset of the data, since only the visualization for numeric features is possibile
   idx <- vector()
   
   for(n in names(data))
@@ -67,9 +76,12 @@ beanPlotFeatures <- function(data , target , subsetvariable = NULL , col = c("or
   features <- names(data)[idx]
   
   
+  # neccesary if more than one feature should be plotted, is not useful in the shiny app since features is limited to the length of one
   
   for(nfeature in features)
   {
+    
+    # if outliers are distributed over a wide range this opiton cuts the values to the interquantile distance. Not avialable in the shiny app
     
     if(quantileCut){
       
@@ -115,7 +127,7 @@ beanPlotFeatures <- function(data , target , subsetvariable = NULL , col = c("or
 
 
 
-#it was added all with prob.TRUE on 27.2
+# Function to find the nearest neighbors of a selected observation
 
 nearestNeighbors <- function(searchspace , newData , nNeighbor = 1000  , targetColumn = "Target" )
 {
@@ -123,6 +135,9 @@ nearestNeighbors <- function(searchspace , newData , nNeighbor = 1000  , targetC
   
   # newdata needs to contain all columns which are also present in the searchspace
   
+  # newdata represents the selected observation from whom the nearest neighbors are to be found
+  
+  # Subselection of the features from the searchspace
   newData <- newData[ , grep(paste0(paste0("^" , colnames(searchspace) , "$") , collapse = "|") , names(newData))]
   
   if(dim(newData)[2] != dim(searchspace)[2]){
@@ -130,23 +145,31 @@ nearestNeighbors <- function(searchspace , newData , nNeighbor = 1000  , targetC
     stop("Search space and new data do not contain the same column.")
   }
   
+  
   newData <- newData[,colnames(searchspace)]
   
   lengthSearchspace <- dim(searchspace)[1]
   
+  
   searchspace <- rbind(searchspace , newData)
+  
+  #Normalization of the inputData in order to treat all features equally; new variable searchdf required in order to keep the unnormalized data
+  #for visualization
   
   searchdf <- BBmisc::normalize(x = searchspace[,grep(targetColumn , names(searchspace) , invert = T)] , method = "standardize" )
   
+  # Searching for the nearest neighbors; The last entrie in searchdf represents the selected observation and is therefore to be discarded in data wheras
+  # it is used as query
+  
   nearestNeighbor <- RANN::nn2(data = searchdf[-(lengthSearchspace+1) , ] , query = searchdf[(lengthSearchspace+1) , ] , k = nNeighbor)
+  
+  # selection of the indexes of nearest neighbors, it were row indexes returned
   
     tmpData <- searchspace[nearestNeighbor[["nn.idx"]] , ]
     
     indexObserved <- tmpData[,targetColumn] == TRUE
     
-
-    # minus one nessesary due to the fact that the first nearest neighbor is the observation itself and should not occur
-    # later on the one is added to the index again
+  # searching for the nearest Neighbor which is true or false respectively
     obsTrue <- min(which(indexObserved == TRUE), na.rm = T)
     
     obsFalse <- min(which(indexObserved == FALSE) , na.rm = T)
@@ -163,6 +186,7 @@ nearestNeighbors <- function(searchspace , newData , nNeighbor = 1000  , targetC
 }
 
 
+# A function to extract the rownames form an prediction object, defined in the mlr package
 
 predictionNames <- function(prediction , class = c("TP" , "TN" , "FP" , "FN")){
   
@@ -202,12 +226,14 @@ summarizeModel <- function(combinedModel){
   
 }
 
+# function to evaluate the function feature generation functions
+
 evaluateFunList <- function(funList , data){
   
   #For every entrie in funList call the function on data
   for(i in 1:length(funList)){
     
-    # mainly nessesary in case the user uploads a self defined function
+    # mainly nessesary in case the user uploads a self defined function, to be more robust against errors
     data <- try(funList[[i]](data) , silent = T)
     
   }
