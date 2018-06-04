@@ -100,7 +100,7 @@ shinyServer(function(input, output , session) {
       #nessesary to return the dataframe
       return(d)
     }
-  }, options = list(scrollX = TRUE),
+  }, options = list(rownames= FALSE),
   caption = "You imported the following data set")
   
   
@@ -311,7 +311,7 @@ shinyServer(function(input, output , session) {
       #nessesary to return the dataframe
       d
     }
-  }, options = list(scrollX = TRUE), selection = 'single',
+  },  selection = 'single',
   caption = "You generated the following new dataset" )
   
   
@@ -621,7 +621,7 @@ shinyServer(function(input, output , session) {
   
   output$generateModelData <-  DT::renderDataTable({
     
-    return(DT::datatable(data = tmpData$GenerateModel , filter = 'top' , options = list(scrollX = TRUE)))
+    return(DT::datatable(data = tmpData$GenerateModel , filter = 'top' , options = list(rownames= FALSE)))
     
     
   }, caption = "Data base of model")
@@ -629,7 +629,7 @@ shinyServer(function(input, output , session) {
   
   output$NNgenerateModelData <-  DT::renderDataTable({
     
-    return(DT::datatable(data = tmpData$GenerateModel , filter = 'top' , options = list(scrollX = TRUE ), selection = 'single'))
+    return(DT::datatable(data = tmpData$GenerateModel , filter = 'top' , options = list(rownames= FALSE), selection = 'single'))
     
     
   }, caption = "Select an observation to find it's nearest neighbors")
@@ -1097,7 +1097,7 @@ shinyServer(function(input, output , session) {
   
   output$optimizeNewdata <-  DT::renderDataTable({
     
-    return(DT::datatable(data = tmpData$OptimizeModel  , filter = 'top',options = list(scrollX = TRUE)))
+    return(DT::datatable(data = tmpData$OptimizeModel  , filter = 'top',options = list(rownames= FALSE)))
     
   }, caption = "Data base of model")
   
@@ -1139,7 +1139,7 @@ shinyServer(function(input, output , session) {
   
   output$NNoptimizeNewdata <-  DT::renderDataTable({
     
-    return(DT::datatable(data = tmpData$OptimizeModel  , filter = 'top',options = list(scrollX = TRUE) , selection = "single"))
+    return(DT::datatable(data = tmpData$OptimizeModel  , filter = 'top',options = list(rownames= FALSE) , selection = "single"))
     
   }, caption = "Select an observation to find the nearest neighbors")
   
@@ -1231,13 +1231,13 @@ shinyServer(function(input, output , session) {
   output$validate.ui <- renderUI({
     sidebarMenu(
       
-      radioButtons("validate.modelSelection" , label = "Select a model!" , choices = c("model" , "optimized model") , selected = "model" ),
+      radioButtons("validate.modelSelection" , label = "Select a model" , choices = c("model" , "optimized model") , selected = "model" ),
       br(),
       
       checkboxInput("validate.allData" , label = "only for test data" , value = T),
       br(),
       
-      actionButton("validate.go" , label = "generate plots")
+      actionButton("validate.go" , label = "Generate plots")
       
     )
   
@@ -1385,11 +1385,11 @@ shinyServer(function(input, output , session) {
       #TODO: Think about the output as it is implementet now
       checkboxInput("predict.NAs" , label = "Force NA containing observations to probability of 0?" , value = F),
       
-      checkboxInput("predict.specifyThreshold" , label = "set manual threshold" , value = F),
+      checkboxInput("predict.specifyThreshold" , label = "Set manual threshold" , value = F),
       
-      numericInput("predict.manualThreshold" , label = "Chose threshold" , min = 0  , value = 0.5, max = 1 , step = 10^-2),
+      numericInput("predict.manualThreshold" , label = "Choose threshold" , min = 0  , value = 0.5, max = 1 , step = 10^-2),
       
-      shinyjs::disabled(actionButton("predict.go" , "predict")),
+      shinyjs::disabled(actionButton("predict.go" , "Predict")),
       
       shinyjs::disabled(downloadButton("predict.Download" , label = "Download .csv"))
       
@@ -1525,7 +1525,7 @@ shinyServer(function(input, output , session) {
         
         data.prediction.download <<- d
         
-        return(DT::datatable(data = d , filter = 'top',options = list(scrollX = TRUE)))
+        return(DT::datatable(data = d , filter = 'top',options = list(rownames= FALSE)))
       })
       
     } )
@@ -1590,7 +1590,7 @@ shinyServer(function(input, output , session) {
         #grep removes the target collumn of the input data in order to avoid uncertainty
         d <- cbind(d , data$newdata[,grep(data$pred$task.desc$target , x = names(data$newdata) , invert = T)])
         
-        return(DT::datatable(data = d , filter = 'top', options = list(scrollX = TRUE) ,selection = 'single'))
+        return(DT::datatable(data = d , filter = 'top', options = list(rownames= FALSE) ,selection = 'single'))
       })
       
     })

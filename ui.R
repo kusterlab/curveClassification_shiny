@@ -37,7 +37,7 @@ shinyUI(
                              tags$div("Loading...",id="loadmessage")),
             navbarPage('Curve classification' ,   
                        
-                       tabPanel('Data import' ,value = 1 , 
+                       tabPanel('Import data' ,value = 1 , 
                                 fluidPage(
                                   sidebarLayout(
                                     sidebarPanel(width = 3,
@@ -52,7 +52,7 @@ shinyUI(
                                 )
                                 
                        ),
-                       tabPanel('Feature generation'  ,
+                       tabPanel('Calculate features'  ,
                                 fluidPage(
                                   sidebarLayout(
                                     sidebarPanel(width = 3,
