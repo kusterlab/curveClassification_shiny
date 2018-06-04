@@ -443,9 +443,8 @@ shinyServer(function(input, output , session) {
       
       selectInput("newModel.PositiveClass" , label = "Select positive class" , choices = isolate(unique(data$data[,input$newModel.TargetColumn])) , multiple = F , selected = PositiveClass() , selectize = T),
       
-      numericInput("newModel.splitData" , label = "Ratio to split data into train and test" , min = 0.05 , max = 0.999 , step = 0.05 , value = isolate(splitDataNewMod())),
+      actionLink("newModel.advancedSettings" , label = "Advanced Settings"),
       
-      numericInput("newModel.usRate" , label = "Select a undersampling rate" , value = isolate(usRate()) , min = 10^-4 , max = 1 , step = 10^-4) ,
       
       checkboxInput("newModel.tuneThreshold" , label = "Tune threshold?" , value = F),
       # TODO: Better label than "Tpr tune value"
@@ -461,6 +460,19 @@ shinyServer(function(input, output , session) {
     )
     
     
+  })
+  
+  observeEvent(input$newModel.advancedSettings, {
+    showModal(modalDialog(
+      title = "Advanced settings",
+      list(
+        numericInput("newModel.splitData" , label = "Ratio to split data into train and test" , min = 0.05 , max = 0.999 , step = 0.05 , value = isolate(splitDataNewMod())),
+        
+        numericInput("newModel.usRate" , label = "Select a undersampling rate" , value = isolate(usRate()) , min = 10^-4 , max = 1 , step = 10^-4)
+        
+        
+      ), footer = modalButton("Confirm")
+    ))
   })
   
   
@@ -608,7 +620,7 @@ shinyServer(function(input, output , session) {
       
       
       colnames(d) <- gsub("prob.TRUE" , "probability" , colnames(d))
-      colnames(d) <- gsub("response" , pred$task.desc$target , colnames(d))
+      colnames(d) <- gsub("response" , "prediction" , colnames(d))
       
       #removal of stored Target column nessesary to avoid to columns with the same name
       
@@ -771,7 +783,7 @@ shinyServer(function(input, output , session) {
     
     output$performanceVsThreshold <- renderPlot({
       
-      return(plotThreshVsPerf(generateThreshVsPerfData(pred , measures = list(tpr , fpr , ppv , acc)) , pretty.names = T))
+      return(plotThreshVsPerf(generateThreshVsPerfData(pred , measures = list(tpr , fpr , ppv , acc)) , pretty.names = T , mark.th = pred$threshold["TRUE"]))
       
       
     })
@@ -1012,7 +1024,7 @@ shinyServer(function(input, output , session) {
     
     output$performanceVsThreshold.old <- renderPlot({
       
-      return(plotThreshVsPerf(generateThreshVsPerfData(pred , measures = list(tpr , fpr , ppv , acc)) , pretty.names = T))
+      return(plotThreshVsPerf(generateThreshVsPerfData(pred , measures = list(tpr , fpr , ppv , acc)) , pretty.names = T , mark.th = pred$threshold["TRUE"]))
       
       
     })
@@ -1045,7 +1057,7 @@ shinyServer(function(input, output , session) {
     
     output$performanceVsThreshold.new <- renderPlot({
       
-      return(plotThreshVsPerf(generateThreshVsPerfData(predNewMod , measures = list(tpr , fpr , ppv , acc)) , pretty.names = T))
+      return(plotThreshVsPerf(generateThreshVsPerfData(predNewMod , measures = list(tpr , fpr , ppv , acc)) , pretty.names = T , mark.th = predNewMod$threshold["TRUE"]))
       
       
     })
@@ -1084,7 +1096,7 @@ shinyServer(function(input, output , session) {
       
       
       colnames(d) <- gsub("prob.TRUE" , "probability" , colnames(d))
-      colnames(d) <- gsub("response" , pred$task.desc$target , colnames(d))
+      colnames(d) <- gsub("response" , "prediction" , colnames(d))
       
       #removal of stored Target column nessesary to avoid to columns with the same name
       tmpData$OptimizeModel <<- cbind( d , data$modelretrained$data[,grep(paste0("^" ,pred$task.desc$target,"$" ) , names(data$modelretrained$data) , invert = T) ])
@@ -1518,7 +1530,7 @@ shinyServer(function(input, output , session) {
         
         
         colnames(d) <- gsub("prob.TRUE" , "probability" , colnames(d))
-        colnames(d) <- gsub("response" , data$pred$task.desc$target , colnames(d))
+        colnames(d) <- gsub("response" , "prediction" , colnames(d))
         
         #grep removes the target collumn of the input data in order to avoid uncertainty
         d <- cbind(d , data$newdata[,grep(data$pred$task.desc$target , x = names(data$newdata) , invert = T)])
@@ -1585,7 +1597,7 @@ shinyServer(function(input, output , session) {
         d <- data$pred$data[,namesToExtract]
         
         colnames(d) <- gsub("prob.TRUE" , "probability" , colnames(d))
-        colnames(d) <- gsub("response" , data$pred$task.desc$target , colnames(d))
+        colnames(d) <- gsub("response" , "prediction" , colnames(d))
         
         #grep removes the target collumn of the input data in order to avoid uncertainty
         d <- cbind(d , data$newdata[,grep(data$pred$task.desc$target , x = names(data$newdata) , invert = T)])
