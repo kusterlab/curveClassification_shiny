@@ -218,7 +218,7 @@ shinyUI(
                                 )
                                 
                        )   ,
-                       tabPanel("Validate Model",
+                       tabPanel("Validate model",
                                 
                                 sidebarPanel(width = 3 ,
                                              
@@ -263,24 +263,24 @@ shinyUI(
                                 )
                        ),
                        navbarMenu("More" ,
-                                  tabPanel("Explore data" ,
-                                           bootstrapPage(
-                                             
-                                             uiOutput("data.summary.box"),
-                                             box(width = 12, title = "Variable Visualization", id = "summary.vis.box",
-                                                 fluidRow(
-                                                   column(12,
-                                                          uiOutput("summary.vis.hist")),
-                                                   column(12,
-                                                          plotlyOutput("summary.vis")
-                                                   )
-                                                 )
-                                             )
-                                             
-                                           )
-                                           
-                                           
-                                  ),
+                                  # tabPanel("Explore data" ,
+                                  #          bootstrapPage(
+                                  #            
+                                  #            uiOutput("data.summary.box"),
+                                  #            box(width = 12, title = "Variable Visualization", id = "summary.vis.box",
+                                  #                fluidRow(
+                                  #                  column(12,
+                                  #                         uiOutput("summary.vis.hist")),
+                                  #                  column(12,
+                                  #                         plotlyOutput("summary.vis")
+                                  #                  )
+                                  #                )
+                                  #            )
+                                  #            
+                                  #          )
+                                  #          
+                                  #          
+                                  # ),
                                   tabPanel("Others" ,
                                            tabsetPanel(
                                              tabPanel("Upload plot function"  ,
