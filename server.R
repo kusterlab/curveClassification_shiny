@@ -236,18 +236,12 @@ shinyServer(function(input, output , session) {
   
   
   # generation of the dataset with features
-  
+  #TODO: Check this part if it is working as expected ...
   observeEvent(input$fgf.start , {
     
     # wrapping into a render text enables easy output of messages if something has failed
     
     output$fgf.messages <- renderText(isolate({
-      
-      #TODO: Think if this causes the problem of dublicates and also comment on this if its solved
-      if(is.null(tmp.fgf.List)){
-        
-        tmp.fgf.List <<- fgf.List
-      }
       
       # selection of all patterns on which the function lists should be evaluated
       
@@ -277,7 +271,7 @@ shinyServer(function(input, output , session) {
         
         validate(need({length(grep(paste0(patternFun , collapse = "|") , names(data$data))) > 0}, message = "The specified pattern does not occur in the dataset!\n"))
         
-        tmp.fgf.List <<- CurveClassification::generateFunctionList(input$fgf.function , patternFun)
+        tmp <- CurveClassification::generateFunctionList(input$fgf.function , patternFun)
         
         
         # Checking for the dataset for the patterns, and combine it with the existing fgf_list 
@@ -288,27 +282,29 @@ shinyServer(function(input, output , session) {
         
         tmp <- CurveClassification::generateFunctionList(input$fgf.function , patternFun)
         
-        tmp.fgf.List <<- c(tmp.fgf.List , tmp)
+        tmp <- c(tmp.fgf.List , tmp)
+        
+        tmp <- tmp[unique(names(tmp))]
+        
       }
       
       # Calculation of the features for the new data
-      validate(need(!is.null(tmp.fgf.List), message = "No feature generation functions selected!\n"),
+      validate(need(!is.null(tmp), message = "No feature generation functions selected!\n"),
                
                need(!is.null(data$data) , message = "No data set selected!\n"))
       
       # packages needs to be applied and installed in the uploaded script, furthermore it does not work if once an error occured.
       # length(fgf.List):length(tmp.fgf.List) nessesary to avoid duplications in the column
-      d <- try(CurveClassification:::evaluateFunList(tmp.fgf.List[(length(fgf.List)+1):length(tmp.fgf.List)] , data$data) , silent = F)
+      d <- try(CurveClassification:::evaluateFunList(tmp , data$data) , silent = F)
       
       #TODO: CHECK why this shit is not working
       
-      if(class(d) == "try-error"){
+      if(class(d) != "try-error"){
         
-        tmp.fgf.List <- tmp.fgf.List[-c((length(tmp.fgf.List)-length(input$fgf.function)):length(tmp.fgf.List))]
+        tmp.fgf.List <<- tmp
         
 
       }
-      print(str(tmp.fgf.List))
       validate(need(class(d) != "try-error" , message = "An error occured during feature calculation no features calculated!\n"))
       
      
@@ -328,12 +324,15 @@ shinyServer(function(input, output , session) {
     
     req(!is.null(data$newFeatures))
     
-    data$data <<- data$newFeatures
+    #Ensure that only unique names and functions are there. So duplicates should be  avoided.
+    data$data <<- data$newFeatures[,unique(colnames(data$data))]
     
-    fgf.List <<- tmp.fgf.List
+    tmp <- c(fgf.List , tmp.fgf.List)
     
-    data$newFeatures <- NULL
-    tmp.fgf.List <- NULL
+    fgf.List <<- tmp[unique(names(tmp))]
+    
+    data$newFeatures <<- NULL
+    tmp.fgf.List <<- NULL
     
     
   })
@@ -399,8 +398,7 @@ shinyServer(function(input, output , session) {
   
   TargetColumn <- reactive({
     
-    print(input$newModel.TargetColumn)
-    
+    #TODO: Bug is fixed but there is maybe a better way to realize this
     if (is.null(input$newModel.TargetColumn) || is.null(data$data) || ( !is.null(input$newModel.TargetColumn) && input$newModel.TargetColumn == "" ) ) {
       
       return(NULL)
@@ -486,7 +484,7 @@ shinyServer(function(input, output , session) {
       selectInput("newModel.features" , label = "Exclude features" , choices = colnames(data$data) , multiple = T , selected = isolate(features()) , selectize = T) ,
       
       selectInput("newModel.TargetColumn" , label = "Select target" , choices = colnames(data$data) , multiple = F , selected = TargetColumn() , selectize = T),
-      
+      #TODO: Check for a better solution for the bug occuring for the reason of undefined columns selected
       selectInput("newModel.PositiveClass" , label = "Select positive class" , choices = unique(data$data[,isolate(TargetColumn())]) , multiple = F , selected = PositiveClass() , selectize = T),
       
       div(style = "float:right;" ,  actionLink("newModel.advancedSettings" , label = "Advanced settings")),
