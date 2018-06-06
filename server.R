@@ -39,7 +39,7 @@ shinyServer(function(input, output , session) {
   
   tmpData <- reactiveValues(GenerateModel = NULL , OptimizeModel = NULL)
   
-  
+  useShinyjs()
   ##### data import #####
   
   
@@ -78,11 +78,17 @@ shinyServer(function(input, output , session) {
       
     } else {
       
-      data$data <- as.data.frame(data.table::rbindlist(lapply(f, read.csv, header = input$import.header, sep = input$import.sep,
-                                                              quote = input$import.quote) , use.names = TRUE, fill = TRUE))
+      data$data <- try(as.data.frame(data.table::rbindlist(lapply(f, read.csv, header = input$import.header, sep = input$import.sep,
+                                                              quote = input$import.quote) , use.names = TRUE, fill = TRUE)))
       
-    }
-    
+    #TO CHECK IF it works
+      fgf.List <- NULL
+      
+      tmp.fgf.List <- NULL
+      
+      
+      
+      }
     
   })
   
@@ -131,18 +137,26 @@ shinyServer(function(input, output , session) {
       
       br(),
       actionButton("fgf.replace" , label = "Use data with new features") ,
-      br(),
+      br()
       
-      wellPanel(
-        
-        h4("Plot options"),
-        
-        selectInput("fgf.TargetColumn" , label = "Select target" , choices = colnames(data$data) , multiple = F , selected = TargetColumn.fgf() , selectize = T),
-        
-        selectInput("fgf.PositiveClass" , label = "Select positive class" , choices = unique(data$data[,input$fgf.TargetColumn]) , multiple = F , selected = PositiveClass.fgf() , selectize = T)
-        
-        
-      )
+      
+      
+       
+
+      
+    )
+    
+  })
+  
+  output$fgf.PlotControllUi <- renderUI({
+    
+    wellPanel(
+      
+      h4("Plot options"),
+      
+      selectInput("fgf.TargetColumn" , label = "Select target" , choices = colnames(data$data) , multiple = F , selected = TargetColumn.fgf() , selectize = T),
+      
+      selectInput("fgf.PositiveClass" , label = "Select positive class" , choices = unique(data$data[,isolate(TargetColumn.fgf())]) , multiple = F , selected = PositiveClass.fgf() , selectize = T)
       
       
     )
@@ -150,11 +164,29 @@ shinyServer(function(input, output , session) {
   })
   
   
+  observe( {
+    data$newFeatures
+    if(is.null(data$newFeatures)){
+      
+      shinyjs::disable("fgf.TargetColumn")
+      shinyjs::disable("fgf.PositiveClass")
+      
+    }else{
+      shinyjs::enable("fgf.TargetColumn")
+      shinyjs::enable("fgf.PositiveClass")
+      
+    }
+    
+    
+  }
+  )
+  
+  
   # Selection of the target variable for data visualization
   
   TargetColumn.fgf <- reactive({
     
-    if(is.null(input$fgf.TargetColumn)){
+    if(is.null(input$fgf.TargetColumn) || is.null(data$newFeatures)|| is.null(data$data)){
       
       return(NULL)
       
@@ -171,7 +203,7 @@ shinyServer(function(input, output , session) {
   
   PositiveClass.fgf <- reactive({
     
-    if(is.null(input$fgf.PositiveClass)){
+    if(is.null(input$fgf.PositiveClass) || is.null(data$data)){
       
       return(NULL)
       
@@ -268,7 +300,18 @@ shinyServer(function(input, output , session) {
       # length(fgf.List):length(tmp.fgf.List) nessesary to avoid duplications in the column
       d <- try(CurveClassification:::evaluateFunList(tmp.fgf.List[(length(fgf.List)+1):length(tmp.fgf.List)] , data$data) , silent = F)
       
+      #TODO: CHECK why this shit is not working
+      
+      if(class(d) == "try-error"){
+        
+        tmp.fgf.List <- tmp.fgf.List[-c((length(tmp.fgf.List)-length(input$fgf.function)):length(tmp.fgf.List))]
+        
+
+      }
+      print(str(tmp.fgf.List))
       validate(need(class(d) != "try-error" , message = "An error occured during feature calculation no features calculated!\n"))
+      
+     
       
       data$newFeatures <<- d
       
@@ -356,9 +399,12 @@ shinyServer(function(input, output , session) {
   
   TargetColumn <- reactive({
     
-    if(is.null(input$newModel.TargetColumn)){
+    print(input$newModel.TargetColumn)
+    
+    if (is.null(input$newModel.TargetColumn) || is.null(data$data) || ( !is.null(input$newModel.TargetColumn) && input$newModel.TargetColumn == "" ) ) {
       
       return(NULL)
+      
       
     }else{
       
@@ -371,7 +417,7 @@ shinyServer(function(input, output , session) {
   
   PositiveClass <- reactive({
     
-    if(is.null(input$newModel.PositiveClass)){
+    if(is.null(input$newModel.PositiveClass) || is.null(data$data)){
       
       return(NULL)
       
@@ -436,12 +482,12 @@ shinyServer(function(input, output , session) {
   output$newModel.ui <- renderUI({
     
     sidebarMenu(
+    
+      selectInput("newModel.features" , label = "Exclude features" , choices = colnames(data$data) , multiple = T , selected = isolate(features()) , selectize = T) ,
       
-      selectInput("newModel.features" , label = "Exclude features" , choices = isolate(colnames(data$data)) , multiple = T , selected = isolate(features()) , selectize = T) ,
+      selectInput("newModel.TargetColumn" , label = "Select target" , choices = colnames(data$data) , multiple = F , selected = TargetColumn() , selectize = T),
       
-      selectInput("newModel.TargetColumn" , label = "Select target" , choices = isolate(colnames(data$data)) , multiple = F , selected = TargetColumn() , selectize = T),
-      
-      selectInput("newModel.PositiveClass" , label = "Select positive class" , choices = isolate(unique(data$data[,input$newModel.TargetColumn])) , multiple = F , selected = PositiveClass() , selectize = T),
+      selectInput("newModel.PositiveClass" , label = "Select positive class" , choices = unique(data$data[,isolate(TargetColumn())]) , multiple = F , selected = PositiveClass() , selectize = T),
       
       div(style = "float:right;" ,  actionLink("newModel.advancedSettings" , label = "Advanced settings")),
       br(),
@@ -471,7 +517,7 @@ shinyServer(function(input, output , session) {
         
         if(!is.null(data$data)){
         
-         paste("negative : positive  ;" ,round(dim(data$data)[1]/sum(data$data[,input$newModel.TargetColumn] == input$newModel.PositiveClass) , digits = 1) , ": 1"   , sep = " ")
+         paste("negative observations : positive observations  ;" ,round(dim(data$data)[1]/sum(data$data[,input$newModel.TargetColumn] == input$newModel.PositiveClass) , digits = 1) , ": 1"   , sep = " ")
         },
         
         br(),

@@ -56,7 +56,8 @@ shinyUI(
                                 fluidPage(
                                   sidebarLayout(
                                     sidebarPanel(width = 3,
-                                                 uiOutput("fgf.ui")
+                                                 uiOutput("fgf.ui"),
+                                                 uiOutput("fgf.PlotControllUi")
                                     ),
                                     mainPanel(width = 9,
                                               wellPanel(
