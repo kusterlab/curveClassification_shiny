@@ -8,7 +8,7 @@ shinyUI(
             tags$head(tags$style("#container * {display: inline ;}" ),
                       tags$style(type="text/css", "
                                        #loadmessage {
-                                       position: absolute;
+                                       position: fixed;
                                        top: 35%;
                                        left: 50%;
                                        margin: auto;

@@ -583,8 +583,8 @@ shinyServer(function(input, output , session) {
       isolate({
         
         txt <- NULL
-        
-        if(is.null(input$newModel.usRate) || input$newModel.usRate == 0){
+        print(usRate())
+        if(is.null(usRate()) || usRate() == 0){
           
           txt <- c(txt , "The selected positive class does not contain a single observations.\n")
           
@@ -609,14 +609,14 @@ shinyServer(function(input, output , session) {
           return(paste("<font color=\"#FF0000\"><b>", txt, "</b></font>"))
         }
         
-        if(input$newModel.usRate != 0){
+        if(usRate() != 0){
           
           #TODO: is this isolate still necessary
           
           isolate({
             
             # random assignment of train data and test data
-            n <- sample(1:dim(data$data)[1] , input$newModel.splitData*dim(data$data)[1])
+            n <- sample(1:dim(data$data)[1] , splitDataNewMod()*dim(data$data)[1])
             
             d <- data$data
             
@@ -631,7 +631,7 @@ shinyServer(function(input, output , session) {
             
             usedFeatures <- grep(paste0(paste0("^" , c(features() , TargetColumn()), "$") , collapse = "|") , names(d) , invert = T , value = T)
             
-            data$model <- CurveClassification::generateModel(classifier = classifier , us.rate = input$newModel.usRate , features = usedFeatures , data = data_train , targetVariable = TargetColumn() , positiveClass = "TRUE" , estimatingThreshold = tuneThreshold() , tprThreshold = input$newModel.tprTuneValue )
+            data$model <- CurveClassification::generateModel(classifier = classifier , us.rate = usRate() , features = usedFeatures , data = data_train , targetVariable = TargetColumn() , positiveClass = "TRUE" , estimatingThreshold = tuneThreshold() , tprThreshold = input$newModel.tprTuneValue )
             
             
             data$model <- CurveClassification::combineModel(trainOutput = data$model , featureFunctionList = fgf.List , test.data = data_test , positveClass = PositiveClass())
