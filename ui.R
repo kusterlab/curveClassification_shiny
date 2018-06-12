@@ -8,17 +8,17 @@ shinyUI(
             tags$head(tags$style("#container * {display: inline ;}" ),
                       tags$style(type="text/css", "
                                        #loadmessage {
-                                       position: fixed;
-                                       top: 50px;
-                                       left: 0px;
-                                       width: 100%;
-                                       padding: 5px 0px 5px 0px;
+                                       position: absolute;
+                                       top: 35%;
+                                       left: 50%;
+                                       margin: auto;
                                        text-align: center;
                                        font-weight: bold;
                                        font-size: 100%;
                                        color: #000000;
-                                       background-color: #CCFF66;
-                                       z-index: 105;
+                                       background: #FFFFFF;
+                                       opacity: 0.7;
+                                       z-index:1;
                                        }
                                        "),
                       tags$style(HTML("
@@ -27,14 +27,15 @@ shinyUI(
                                       }
                                       ")),
                       tags$link(rel = "icon" , href="curve.png"),
-                      tags$title("Curve classification tool")
+                      tags$title("Curve classification tool"),
+                      tags$script(src="LoadingBar.js")
             ),
             
             useShinyjs(),
-            
-            conditionalPanel(condition="$('html').hasClass('shiny-busy')",
-                             
-                             tags$div("Loading...",id="loadmessage")),
+            div(div(class = "busy",
+                    img(src="Loading_icon.gif")) , id = "loadmessage"),
+
+
             navbarPage('Curve classification' ,   
                        
                        tabPanel('Import data' ,value = 1 , 
