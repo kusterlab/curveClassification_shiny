@@ -79,16 +79,16 @@ shinyServer(function(input, output , session) {
     } else {
       
       data$data <- try(as.data.frame(data.table::rbindlist(lapply(f, read.csv, header = input$import.header, sep = input$import.sep,
-                                                              quote = input$import.quote) , use.names = TRUE, fill = TRUE)))
+                                                                  quote = input$import.quote) , use.names = TRUE, fill = TRUE)))
       
-    #TO CHECK IF it works
+      #TO CHECK IF it works
       fgf.List <- NULL
       
       tmp.fgf.List <- NULL
       
       
       
-      }
+    }
     
   })
   
@@ -141,8 +141,8 @@ shinyServer(function(input, output , session) {
       
       
       
-       
-
+      
+      
       
     )
     
@@ -303,11 +303,11 @@ shinyServer(function(input, output , session) {
         
         tmp.fgf.List <<- tmp
         
-
+        
       }
       validate(need(class(d) != "try-error" , message = "An error occured during feature calculation no features calculated!\n"))
       
-     
+      
       
       data$newFeatures <<- d
       
@@ -454,10 +454,26 @@ shinyServer(function(input, output , session) {
     }else{
       
       #TODO: calculation should be at a maximum the a ratio of 1:3 so this should be limited because this function plain balaces the dataset
+      # Check if it is working like intended.
+      ntotal <- dim(data$data)[1]
       
-      return(round(sum(data$data[,input$newModel.TargetColumn] == input$newModel.PositiveClass)/dim(data$data)[1] , digits = 4))
+      npositive <- sum(data$data[,input$newModel.TargetColumn] == input$newModel.PositiveClass)
       
-    }
+      if(ntotal < 3*npositive){
+        
+        fac <- ntotal/npositive
+        
+        
+        return(round(fac*npositive/ntotal))
+        
+      }else{
+        
+        
+        return(round(3*npositive/ntotal))
+        
+      }
+    }  
+    
     
   })
   
@@ -480,7 +496,7 @@ shinyServer(function(input, output , session) {
   output$newModel.ui <- renderUI({
     
     sidebarMenu(
-    
+      
       selectInput("newModel.features" , label = "Exclude features" , choices = colnames(data$data) , multiple = T , selected = isolate(features()) , selectize = T) ,
       
       selectInput("newModel.TargetColumn" , label = "Select target" , choices = colnames(data$data) , multiple = F , selected = TargetColumn() , selectize = T),
@@ -514,8 +530,8 @@ shinyServer(function(input, output , session) {
         numericInput("newModel.splitData" , label = "Ratio to split data into train and test" , min = 0.05 , max = 0.999 , step = 0.05 , value = isolate(splitDataNewMod())),
         
         if(!is.null(data$data)){
-        
-         paste("negative observations : positive observations  ;" ,round(dim(data$data)[1]/sum(data$data[,input$newModel.TargetColumn] == input$newModel.PositiveClass) , digits = 1) , ": 1"   , sep = " ")
+          
+          paste("negative observations : positive observations  ;" ,round(dim(data$data)[1]/sum(data$data[,input$newModel.TargetColumn] == input$newModel.PositiveClass) , digits = 1) , ": 1"   , sep = " ")
         },
         
         br(),
@@ -724,7 +740,7 @@ shinyServer(function(input, output , session) {
             
             temp <-  plotfun(data[x , ])
             
-           
+            
           } )
           
           plotOutput(paste0("plotGenerateModel",x))
@@ -901,7 +917,7 @@ shinyServer(function(input, output , session) {
     
   })
   
-# Makes the exchange button only available if a retrained model is available  
+  # Makes the exchange button only available if a retrained model is available  
   output$optimizeExchangeButton <- renderUI({
     
     if(!is.null(data$modelretrained)){
@@ -1121,8 +1137,8 @@ shinyServer(function(input, output , session) {
       
       return( plotTargetDensity(predNewMod , thresholdLFQ = predNewMod$threshold["TRUE"]) )
       
-     })
-   
+    })
+    
   })
   
   
@@ -1305,7 +1321,7 @@ shinyServer(function(input, output , session) {
       actionButton("validate.go" , label = "Generate plots")
       
     )
-  
+    
   })
   
   #Generate plots of all false negatives
@@ -1416,7 +1432,7 @@ shinyServer(function(input, output , session) {
           output[[paste0("plotFP",x)]] <- renderPlot({
             
             temp <-  plotfun(data[x , ])
-
+            
           } )
           
           plotOutput(paste0("plotFP",x))
@@ -1510,7 +1526,7 @@ shinyServer(function(input, output , session) {
     } else {
       
       data$newdata <- as.data.frame(data.table::rbindlist(lapply(f, read.csv, header = input$predict.header, sep = input$predict.sep) , use.names = TRUE, fill = TRUE))
-
+      
     }
     
   })
@@ -1603,7 +1619,7 @@ shinyServer(function(input, output , session) {
   observe({
     
     d <- data.prediction.download[input$predictionData_rows_selected , ]
-     
+    
     output$plotsPrediction <- renderUI({
       
       validate(need(!is.null(plotfun) , message = "No plot function found!\n"))
@@ -1635,7 +1651,7 @@ shinyServer(function(input, output , session) {
   
   output$predict.Download <- downloadHandler(filename = function() {paste0(input$predict.csv$name , "predicted.csv")} , content = function(file){write.csv(data.prediction.download , file)})
   
- 
+  
   # Visualization of the prediction within a data table
   
   observeEvent(data$pred , {
@@ -1680,7 +1696,7 @@ shinyServer(function(input, output , session) {
       
     }
     
-
+    
     validate(need(!is.null(plotfun) , "No plot function avaiable!\n"),
              need(!is.null(data$model) , "No model selected!\n"),
              need(nrow(newData) > 0 , "No observation selected!"),
@@ -1935,7 +1951,7 @@ shinyServer(function(input, output , session) {
         print(plotfun_Env[[n]])
         
       }
-   
+      
     })
     
   })
