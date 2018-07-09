@@ -405,14 +405,14 @@ shinyServer(function(input, output , session) {
       
       
     }else{
-      
+      toggleVars$TargetColumn <<- T
       return(input$newModel.TargetColumn)
       
     }
     
   })
   
-  
+  toggleVars <- reactiveValues(PositiveClass = T , TargetColumn = T )
   PositiveClass <- reactive({
     
     if(is.null(input$newModel.PositiveClass) || is.null(data$data)){
@@ -420,9 +420,9 @@ shinyServer(function(input, output , session) {
       return(NULL)
       
     }else{
-      
+      toggleVars$PositiveClass <<- T
       return(input$newModel.PositiveClass)
-      
+     
     }
     
   })
@@ -442,39 +442,31 @@ shinyServer(function(input, output , session) {
   })
   
   usRate <- reactive({
-    
-    if(is.null(data$data)){
+    if(!is.null(PositiveClass()) && !is.null(TargetColumn()) && (is.null(input$newModel.usRate) || toggleVars$PositiveClass || toggleVars$TargetColumn)){
+      ntotal <- dim(data$data)[1]
       
-      return(NULL)
+      npositive <- sum(data$data[,input$newModel.TargetColumn] == input$newModel.PositiveClass)
       
-    }else if(is.null(input$newModel.TargetColumn) || is.null(input$newModel.PositiveClass)){
+      if(ntotal > 3*npositive){
+        
+        fac <-npositive/ntotal
+        
+        toggleVars$PositiveClass <<- F
+        toggleVars$TargetColumn <<- F
+        return(round(3*fac , digits = 4))
+        
+      }else{
+        return(1)
+      }
+    }else if(is.null(PositiveClass()) || is.null(TargetColumn())|| is.null(input$newModel.usRate)){
       
       return(0.05)
       
     }else{
       
-      #TODO: calculation should be at a maximum the a ratio of 1:3 so this should be limited because this function plain balaces the dataset
-      # Check if it is working like intended.
-      ntotal <- dim(data$data)[1]
-      
-      npositive <- sum(data$data[,input$newModel.TargetColumn] == input$newModel.PositiveClass)
-      
-      if(ntotal < 3*npositive){
-        
-        fac <- ntotal/npositive
-        
-        
-        return(round(fac*npositive/ntotal))
-        
-      }else{
-        
-        
-        return(round(3*npositive/ntotal))
-        
-      }
-    }  
-    
-    
+      return(input$newModel.usRate)
+    } 
+  
   })
   
   splitDataNewMod <- reactive({
@@ -537,7 +529,7 @@ shinyServer(function(input, output , session) {
         br(),
         br(),
         
-        numericInput("newModel.usRate" , label = "Select a undersampling rate" , value = isolate(usRate()) , min = 10^-4 , max = 1 , step = 10^-4)
+        numericInput("newModel.usRate" , label = "Select a undersampling rate" , value = usRate() , min = 10^-4 , max = 1 , step = 10^-4)
         
         
       ), footer = modalButton("Confirm")
@@ -548,7 +540,7 @@ shinyServer(function(input, output , session) {
   # Show and hide the selector of tprTuneValue
   
   observe({
-    
+
     if(!is.null(input$newModel.tuneThreshold) && input$newModel.tuneThreshold){
       
       shinyjs::show("newModel.tprTuneValue" , animType = "fade")
@@ -595,11 +587,11 @@ shinyServer(function(input, output , session) {
     
     output$newModelMessages <- renderText({
       
-      
+   
       isolate({
         
         txt <- NULL
-        print(usRate())
+ 
         if(is.null(usRate()) || usRate() == 0){
           
           txt <- c(txt , "The selected positive class does not contain a single observations.\n")
