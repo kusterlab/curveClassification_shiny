@@ -243,7 +243,7 @@ shinyUI(
                                 ),
                                 mainPanel(width = 9 ,
                                           tabsetPanel(
-                                            tabPanel("prediction" ,
+                                            tabPanel("Prediction" ,
                                                      
                                                      DT::dataTableOutput("predictionData"),
                                                      uiOutput("plotsPrediction")
