@@ -20,21 +20,6 @@ reqNFeat = function(feat.sel, df) {
 }
 
 
-# Generation of a plot Theme used for the data exploration part imported from mlr shiny
-
-addPlotTheme = function(plot.obj) {
-  plot.theme = theme(axis.line = element_line(size = 1, colour = "black"),
-                     panel.grid.major = element_line(colour = "#d3d3d3"),
-                     panel.grid.minor = element_blank(),
-                     panel.border = element_blank(),
-                     panel.background = element_blank(),
-                     plot.title = element_blank(),
-                     axis.text.x = element_text(colour = "black", size = 9),
-                     axis.title.x = element_text(vjust = 0.9),
-                     axis.text.y = element_text(colour = "black", size = 9))
-  plot.obj + theme_bw() + plot.theme
-}
-
 
 
 
