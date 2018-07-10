@@ -101,12 +101,15 @@ fgf_meanSlopes <- function(data = data , pattern){
 
 fgf_polynomFit <- function(data , pattern , degree = 1){
   
+  
+  colnames(data) <- gsub("\\.0nM" , "DMSO" , colnames(data))
+  
   #sorting the pattern due to the conc
   conc <- grep(paste0(pattern , ".*nM") , names(data) , value = T)
   
   # get the concentration
   conc <- as.numeric(gsub("nM" , "" , gsub(pattern , replacement = "" , x = conc)))
-  
+
   # extract rsquare and a number the parameters except of the intersect a
   rsquare <- apply(data[,grep(paste0(pattern , ".*nM") , names(data))] , 1 , function(x , conc , degree){
     
@@ -127,6 +130,8 @@ fgf_polynomFit <- function(data , pattern , degree = 1){
       tmp <- data.frame(conc = log10(conc) , response = x )
       
     }
+    
+
     
     if(sum(is.finite(tmp$response)) > 2){
       # fitting the model with the given degree; raw = T is important here to re
@@ -155,6 +160,9 @@ fgf_polynomFit <- function(data , pattern , degree = 1){
   data <- cbind(data , t(rsquare))
   names(data)[initalLength+1] <- paste0(gsub("[Ii]ntensity." , "" , pattern), "rsquare")
   names(data)[(initalLength+2):length(names(data))] <- paste0(gsub("[Ii]ntensity." , "" , pattern), "LM_Slope" )
+  
+  colnames(data) <- gsub( "DMSO" , "\\.0nM" ,colnames(data))
+  
   
   return(data)
 
