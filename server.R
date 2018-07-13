@@ -325,8 +325,7 @@ shinyServer(function(input, output , session) {
     req(!is.null(data$newFeatures))
     
     #Ensure that only unique names and functions are there. So duplicates should be  avoided.
-    data$data <<- data$newFeatures[,unique(colnames(data$data))]
-    
+    data$data <<- data$newFeatures[,unique(colnames(data$newFeatures))]
     tmp <- c(fgf.List , tmp.fgf.List)
     
     fgf.List <<- tmp[unique(names(tmp))]
@@ -759,7 +758,7 @@ shinyServer(function(input, output , session) {
     )
     
     # removal of the selected observation from the searchspace because otherwise this would be found as the nearest neighbor
-    
+    colnames(newData) <- gsub("truth" , replacement = data$model$model$task.desc$target , x = colnames(newData)) 
     searchspace <- data$model$data[-input$NNgenerateModelData_rows_selected , c(data$model$model$features , data$model$model$task.desc$target)]
     
     searchspace <- CurveClassification:::removeNAs(searchspace)

@@ -386,9 +386,9 @@ fgf_diffVar <- function(data , pattern){
 # Normalizes the specified pattern onto the values of DMSO controll
 fgf_normalize <- function(data , pattern){
   
-  colnames(data) <- gsub("\\.DMSO", ".0.nM", colnames(data))
+  colnames(data) <- gsub("\\.DMSO", ".0nM", colnames(data))
   
-  idxDMSO <- grep(paste0(pattern , "0.nM") , names(data))
+  idxDMSO <- grep(paste0(pattern , "0nM") , names(data))
   
   idxPattern <- grep(pattern  , names(data))
   
