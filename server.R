@@ -1229,6 +1229,8 @@ shinyServer(function(input, output , session) {
              need(!is.null(data$modelretrained$data) , "No data for the model available!")
     )
     
+    colnames(newData) <- gsub("truth" , replacement = data$modelretrained$model$task.desc$target , x = colnames(newData)) 
+    
     searchspace <- data$modelretrained$data[-input$NNoptimizeNewdata_rows_selected , c(data$modelretrained$model$features , data$modelretrained$model$task.desc$target)]
     
     searchspace <- CurveClassification:::removeNAs(searchspace)
@@ -1692,6 +1694,7 @@ shinyServer(function(input, output , session) {
              need(!is.null(data$model) , "No model selected!\n"),
              need(nrow(newData) > 0 , "No observation selected!"),
              need(!is.null(data$model$data) , "No data for the model available!"))
+    colnames(newData) <- gsub("truth" , replacement = data$model$model$task.desc$target , x = colnames(newData)) 
     
     searchspace <- data$model$data[ , c(data$model$model$features , data$model$model$task.desc$target)]
     
