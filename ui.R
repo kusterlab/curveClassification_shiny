@@ -1,6 +1,25 @@
 
-
 require(shinyjs)
+require(shiny)
+require(shinydashboard)
+require(plotly)
+require(BBmisc)
+require(ggplot2)
+require(mlr)
+require(GGally)
+require(beanplot)
+require(data.table)
+require(RANN)
+require(DT)
+require(caret)
+require(plotrix)
+require(CurveClassification)
+
+
+
+source("./configuration.R")
+source("./helper/helpers.R")
+
 
 shinyUI( 
   
