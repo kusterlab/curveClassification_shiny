@@ -6,7 +6,7 @@ RUN apt-get update -qq \
 
 MAINTAINER Tobias Schmidt "tobias.k.schmidt@tum.de"
 
-EXPOSE 6666
+EXPOSE 8787
 
 WORKDIR /srv/shiny/
 
