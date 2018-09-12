@@ -4,7 +4,7 @@ Minimal web application to train and evaluate random forests for classification 
 
 ## Usage
 
-A detailed description can be found in the provided [PDF](https://github.com/kusterlab/cindeR/raw/master/manual/curveClassification_manual.pdf), but we also provide a video tutorial on [Youtube](https://youtu.be/TzBBvuAYtkg)
+A detailed description can be found in the provided [PDF](https://github.com/kusterlab/curveClassification_shiny/raw/master/manual/curveClassification_manual.pdf), but we also provide a video tutorial on [Youtube](https://www.youtube.com/watch?v=TzBBvuAYtkg&list=PLCBcz0G7FF6-Ts1ljvqwEO0uvRXvu2O63)
 
 ## Building your own CindeR instance
 
