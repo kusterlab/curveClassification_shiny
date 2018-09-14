@@ -29,5 +29,12 @@ COPY server.R /srv/shiny/server.R
 COPY configuration.R /srv/shiny/configuration.R
 COPY .Rprofile /srv/shiny/.Rprofile
 
+# necessary for docker on Windows
+# https://github.com/docker/labs/issues/215
+RUN apt-get update -qq \
+	&& apt-get install --no-install-recommends -y \
+	dos2unix
+RUN dos2unix /usr/bin/shiny.sh
+
 CMD ["/usr/bin/shiny.sh"]
 
