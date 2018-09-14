@@ -10,9 +10,9 @@ A detailed description can be found in the provided [PDF](https://github.com/kus
 
 ### Requirenment
 - [Docker](https://www.docker.com/)
-  - [How to install for linux](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
-  - [How to install for Windows](https://www.docker.com/get-started). 
-  - [How to install for MacOS](https://www.docker.com/get-started)
+  - [Installation on linux](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
+  - [Installation on Windows 10](https://www.docker.com/get-started) 
+  - [Installation on MacOS](https://www.docker.com/get-started)
 
   since June 20 you have to register to be able to download docker for Windows and MacOS.
   
@@ -29,13 +29,15 @@ make run
 
 #### Windows
 1. Open `PowerShell`
-```
-docker build https://github.com/kusterlab/curveClassification_shiny
-make run
+2. `docker build https://github.com/kusterlab/curveClassification_shiny -t curveclassification`
+3. `docker run -p 8787:8787 curveclassification`
 ```
 
+Step 2 is not necessary after the first run.
+*Hint*: docker on Windows reacts with huge delays.
+
 #### MacOS
-You can either follow the installation for Linux
+You can follow the installation for Linux
 
 
 The server/computer should now run a *CurveClassification* instance, which is available on port `8787`.
