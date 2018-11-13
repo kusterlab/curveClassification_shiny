@@ -16,7 +16,9 @@ RUN Rscript -e "install.packages('https://cran.r-project.org/src/contrib/Archive
 COPY ./packrat /srv/shiny/packrat
 RUN Rscript -e "packrat::restore('/srv/shiny/')"
 
-RUN Rscript -e "source('packrat/init.R'); install.packages('devtools'); require(devtools); devtools::install_github('kusterlab/curveClassification_package', upgrade_dependencies=FALSE, dependencies=TRUE)"
+RUN apt-get install -y libxml2-dev
+
+RUN Rscript -e "source('packrat/init.R'); source('https://bioconductor.org/biocLite.R'); BiocInstaller::biocLite(c('Biobase')); install.packages('devtools'); require(devtools); devtools::install_github('kusterlab/curveClassification_package', upgrade_dependencies=FALSE, dependencies=TRUE)"
 
 
 
