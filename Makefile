@@ -1,7 +1,7 @@
 IMAGE = curve_classification
 PORT_IN = 8787
 PORT_OUT = 8787
-MEMORY_LIMIT = 2048mb
+MEMORY_LIMIT = 4096mb
 CPU_LIMIT = 1
 
 build:

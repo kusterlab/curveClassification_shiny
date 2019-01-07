@@ -1,4 +1,4 @@
-FROM r-base:3.4.2
+FROM r-base:3.4.0
 
 RUN apt-get update -qq \
 	&& apt-get install --no-install-recommends -y \
