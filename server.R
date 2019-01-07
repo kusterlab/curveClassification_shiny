@@ -403,14 +403,12 @@ shinyServer(function(input, output , session) {
       
       
     }else{
-      toggleVars$TargetColumn <<- T
       return(input$newModel.TargetColumn)
       
     }
     
   })
   
-  toggleVars <- reactiveValues(PositiveClass = T , TargetColumn = T )
   PositiveClass <- reactive({
     
     if(is.null(input$newModel.PositiveClass) || is.null(data$data)){
@@ -418,13 +416,13 @@ shinyServer(function(input, output , session) {
       return(NULL)
       
     }else{
-      toggleVars$PositiveClass <<- T
       return(input$newModel.PositiveClass)
      
     }
     
   })
   
+
   tuneThreshold <- reactive({
     
     if(is.null(input$newModel.tuneThreshold)){
@@ -440,36 +438,22 @@ shinyServer(function(input, output , session) {
   })
   
   usRate <- reactive({
-    if(!is.null(PositiveClass()) && !is.null(TargetColumn()) && (is.null(input$newModel.usRate) || toggleVars$PositiveClass || toggleVars$TargetColumn)){
-      ntotal <- dim(data$data)[1]
+    if(is.null(input$newModel.usRate)){
       
-      npositive <- sum(data$data[,input$newModel.TargetColumn] == input$newModel.PositiveClass)
-      
-      if(ntotal > 3*npositive){
-        
-        fac <-npositive/ntotal
-        
-        toggleVars$PositiveClass <<- F
-        toggleVars$TargetColumn <<- F
-        return(round(3*fac , digits = 4))
-        
-      }else{
-        return(1)
-      }
-    }else if(is.null(PositiveClass()) || is.null(TargetColumn())|| is.null(input$newModel.usRate)){
-      
-      return(0.05)
+      return(1)
       
     }else{
       
       return(input$newModel.usRate)
-    } 
-  
+      
+    }
   })
   
+  
+  
+  
   splitDataNewMod <- reactive({
-    
-    
+
     if(is.null(input$newModel.splitData)){
       
       return(0.8)
@@ -481,6 +465,30 @@ shinyServer(function(input, output , session) {
     }
     
   })
+  
+  sugesstedUSRate <- reactive({
+    if(!is.null(PositiveClass()) && !is.null(TargetColumn())){
+      ntotal <- dim(data$data)[1]
+      
+      npositive <- sum(data$data[,input$newModel.TargetColumn] == input$newModel.PositiveClass)
+      
+      if(ntotal > 3*npositive){
+        
+        fac <-npositive/ntotal
+
+        return(round(3*fac , digits = 4))
+        
+      }else{
+        return(1)
+      }
+    }else{
+      
+      return(0.05)
+      
+    }
+    
+  })
+  
   
   
   output$newModel.ui <- renderUI({
@@ -513,12 +521,18 @@ shinyServer(function(input, output , session) {
     
   })
   
+  observeEvent(input$newModel.suggestUsRate , {
+    
+    updateNumericInput(session , inputId = "newModel.usRate" , value = isolate(sugesstedUSRate()) , min = 10^-4 , max = 1 , step = 10^-4 )
+    
+  })
+  
   observeEvent(input$newModel.advancedSettings, {
     showModal(modalDialog(
       title = "Advanced settings",
       list(
         numericInput("newModel.splitData" , label = "Ratio to split data into train and test" , min = 0.05 , max = 0.999 , step = 0.05 , value = isolate(splitDataNewMod())),
-        
+
         if(!is.null(data$data)){
           
           paste("negative observations : positive observations  ;" ,round(dim(data$data)[1]/sum(data$data[,input$newModel.TargetColumn] == input$newModel.PositiveClass) , digits = 1) , ": 1"   , sep = " ")
@@ -527,7 +541,8 @@ shinyServer(function(input, output , session) {
         br(),
         br(),
         
-        numericInput("newModel.usRate" , label = "Select a undersampling rate" , value = usRate() , min = 10^-4 , max = 1 , step = 10^-4)
+        numericInput("newModel.usRate" , label = "Select a undersampling rate" , value = usRate() , min = 10^-4 , max = 1 , step = 10^-4),
+                 actionButton("newModel.suggestUsRate" , label = "Suggest undersampling rate")
         
         
       ), footer = modalButton("Confirm")
@@ -637,7 +652,7 @@ shinyServer(function(input, output , session) {
             
             usedFeatures <- grep(paste0(paste0("^" , c(features() , TargetColumn()), "$") , collapse = "|") , names(d) , invert = T , value = T)
             
-            data$model <- CurveClassification::generateModel(classifier = classifier , us.rate = usRate() , features = usedFeatures , data = data_train , targetVariable = TargetColumn() , positiveClass = "TRUE" , estimatingThreshold = tuneThreshold() , tprThreshold = input$newModel.tprTuneValue )
+            data$model <- CurveClassification::generateModel(classifier = classifier , us.rate = usRate() , features = usedFeatures , data = data_train , targetVariable = TargetColumn() , positiveClass = "TRUE" , estimatingThreshold = tuneThreshold() , tprThreshold = input$newModel.tprTuneValue , hyperpars = list(ntree = 750) )
             
             
             data$model <- CurveClassification::combineModel(trainOutput = data$model , featureFunctionList = fgf.List , test.data = data_test , positveClass = PositiveClass())
@@ -1140,25 +1155,41 @@ shinyServer(function(input, output , session) {
              need(!is.null(data$modelretrained$data) , "No data for the model available!"))
     
     isolate({
-      pred <- try(predict(data$modelretrained , newdata = data$modelretrained$data, NAtoZero = T))
+      predNewMod <- try(predict(data$modelretrained , newdata = data$modelretrained$data, NAtoZero = T))
       
       if(!is.null(data$modelretrained$threshold)){
         
-        pred <- setThreshold(pred , data$modelretrained$threshold)
+        predNewMod <- setThreshold(predNewMod , data$modelretrained$threshold)
+      }
+      
+      validate(need(class(predNewMod) != "try-error" , "No prediction possible, please check if the features are similar to the training data!\n"))
+      
+      namesToExtract <- grep("prob.FALSE" , names(predNewMod$data) , invert = T)
+      
+      d <- predNewMod$data[,namesToExtract]
+      ##
+      pred <- try(predict(data$model , newdata = data$modelretrained$data, NAtoZero = T))
+      
+      if(!is.null(data$model$threshold)){
+        
+        pred <- setThreshold(pred , data$model$threshold)
       }
       
       validate(need(class(pred) != "try-error" , "No prediction possible, please check if the features are similar to the training data!\n"))
       
-      namesToExtract <- grep("prob.FALSE" , names(pred$data) , invert = T)
+      namesToExtract <- grep("prob.FALSE|truth" , names(pred$data) , invert = T)
       
-      d <- pred$data[,namesToExtract]
+      old <- predNewMod$data[,namesToExtract]
+      colnames(old) <- gsub("prob.TRUE" , "probability old model" , colnames(old))
+      colnames(old) <- gsub("response" , "prediction old model" , colnames(old))
       
+      ##
       
       colnames(d) <- gsub("prob.TRUE" , "probability" , colnames(d))
       colnames(d) <- gsub("response" , "prediction" , colnames(d))
       
       #removal of stored Target column nessesary to avoid to columns with the same name
-      tmpData$OptimizeModel <<- cbind( d , data$modelretrained$data[,grep(paste0("^" ,pred$task.desc$target,"$" ) , names(data$modelretrained$data) , invert = T) ])
+      tmpData$OptimizeModel <<- cbind( d , old ,  data$modelretrained$data[,grep(paste0("^" ,predNewMod$task.desc$target,"$" ) , names(data$modelretrained$data) , invert = T) ])
       
     })
     
